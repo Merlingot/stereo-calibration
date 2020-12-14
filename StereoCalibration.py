@@ -44,6 +44,10 @@ class StereoCalibration():
         self.err2, self.M2, self.d2, self.r2, self.t2 = None, None, None, None, None
         self.errStereo, self.R, self.T = None, None, None,
 
+        # Flags:
+        self.not_fisheye_flags = cv2.CALIB_FIX_K3|cv2.CALIB_ZERO_TANGENT_DIST
+        self.fisheye_flags=cv2.CALIB_RATIONAL_MODEL|cv2.CALIB_FIX_K5|cv2.CALIB_FIX_K6|cv2.CALIB_ZERO_TANGENT_DIST
+
 
 
     def read_single(self, view):
@@ -93,14 +97,14 @@ class StereoCalibration():
             self.objpoints_l, self.imgpoints_l, self.imageSize1 = self.read_single('left')
             self.objpoints_r, self.imgpoints_r, self.imageSize2 = self.read_single('right')
         if fisheye==True:
-            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv2.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=cv2.CALIB_RATIONAL_MODEL)
+            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv2.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=self.fisheye_flags)
 
-            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv2.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=cv2.CALIB_RATIONAL_MODEL)
+            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv2.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=self.fisheye_flags)
 
         else:
-            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv2.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None)
+            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv2.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=self.not_fisheye_flags)
 
-            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv2.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None)
+            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv2.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=self.not_fisheye_flags)
 
         # Print erreur de reprojection
         print('Erreur de reprojection RMS calibration individuelle')
@@ -134,7 +138,9 @@ class StereoCalibration():
 
         # caméra fisheye
         if fisheye:
-            flags += cv2.CALIB_RATIONAL_MODEL
+            flags += self.fisheye_flags
+        else:
+            flags += self.not_fisheye_flags
 
         # calculs
         self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F= cv2.stereoCalibrate(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1 ,criteria=self.criteria_cal, flags=flags)
@@ -195,13 +201,14 @@ class StereoCalibration():
 
     def reprojection(self, folder):
         """ Dessiner la reprojection """
-        outputClean([folder])
+        # outputClean([folder])
 
-        images_right = np.sort(glob.glob(self.single_path + 'left*.jpg'))
-        images_left = np.sort(glob.glob(self.single_path + 'right*.jpg'))
+        images_left = np.sort(glob.glob(self.single_path + 'left*.jpg'))
+        images_right = np.sort(glob.glob(self.single_path + 'right*.jpg'))
         assert (len(images_right) != 0 or len(images_left) != 0  ), "Images pas trouvées. Vérifier le path"
 
-        for i in range(len(images_left)):
+        for i in range(len(self.imgpoints_l)):
             draw_reprojection(cv2.imread(images_left[i]), self.objpoints_l[i], self.imgpoints_l[i], self.M1, self.d1, self.patternSize, self.squaresize, folder, i)
-        for i in range(len(images_right)):
-            draw_reprojection(cv2.imread(images_right[i]), self.objpoints_r[i], self.imgpoints_r[i], self.M2, self.d2, self.patternSize, self.squaresize, folder, i)
+
+        # for j in range(len(self.imgpoints_r)):
+        #     draw_reprojection(cv2.imread(images_right[j]), self.objpoints_r[j], self.imgpoints_r[j], self.M2, self.d2, self.patternSize, self.squaresize, folder, j)
