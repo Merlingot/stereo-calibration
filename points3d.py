@@ -39,9 +39,7 @@ width, height=imageSize1[1],imageSize1[0]
 colorL, grayL=read_images(left) #left
 colorR, grayR=read_images(right) #right
 
-
-
-R1, R2, P1, P2, Q , roi_1, roi_2= cv.stereoRectify(K1, D1, K2, D2, (height,width), R, T, flags=0, alpha=-1)
+R1, R2, P1, P2, Q , roi_1, roi_2= cv.stereoRectify(K1, D1, K2, D2, (height,width), R, T, flags=0)
 leftMapX, leftMapY = cv.initUndistortRectifyMap(K1, D1, R1, P1, (width, height), cv.CV_32FC1)
 left_rectified = cv.remap(grayL, leftMapX, leftMapY, cv.INTER_LINEAR)
 color_rectified=cv.remap(colorL, leftMapX, leftMapY, cv.INTER_LINEAR)
@@ -56,12 +54,12 @@ left_for_matcher = left_rectified
 right_for_matcher = right_rectified
 d=np.absolute((P1-P2)[0][2])
 wsize = 3 #sgbm
-if d < 17:
+if d :
     min_disp=0
-    num_disp=int(32 - min_disp)
-else:
-    min_disp=int(d + (16 - d%16))
     num_disp=int(122 - min_disp)
+# else:
+#     min_disp=int(d + (16 - d%16))
+#     num_disp=int(122 - min_disp)
 
 left_matcher = cv.StereoSGBM_create(min_disp, num_disp, wsize);
 left_matcher.setP1(24*wsize*wsize);
@@ -105,31 +103,24 @@ plt.imshow(solved_filtered_disp)
 plt.colorbar()
 
 # assert np.linalg.norm(solved_filtered_disp)!=np.NaN, 'Échec filtre. Changer paramètre filtre wls'
-cv.imwrite('disparity_map.png'.format(i), solved_filtered_disp)
+# cv.imwrite('disparity_map.png'.format(i), solved_filtered_disp)
 
 # Reproject to 3d --------------------------------------------
-points = cv.reprojectImageTo3D(solved_filtered_disp, Q, handleMissingValues=False)
+points = cv.reprojectImageTo3D(filtered_disp, Q, handleMissingValues=False)
 
-# plt.figure()
-# plt.imshow(points)
-# plt.colorbar()
+plt.figure()
+plt.imshow(points[:,:,2])
+plt.colorbar()
 
 # Save ----------------------------------------------------
 colors = cv.cvtColor(color_rectified, cv.COLOR_BGR2RGB)
 mask = solved_filtered_disp > solved_filtered_disp.min()
 # mask = solved_filtered_disp < solved_filtered_disp.max()
 
-
 out_points = points[mask]
 out_colors = colors[mask]
 out_fn = '3dpoints/out_{}.ply'.format(i)
 write_ply(out_fn, out_points, out_colors)
 
-# Distance en z (absolut)
-z=np.absolute(points[:,:,2])
 
-#     return z
-#
-#
-#
 # return_point3d(left, right, left_xml, right_xml, wls_lambda=8000.0, wls_sigma=1.5, i=i)
