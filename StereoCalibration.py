@@ -1,4 +1,3 @@
-
 import numpy as np
 import cv2
 import glob, os
@@ -19,6 +18,7 @@ class StereoCalibration():
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
         self.criteria_cal = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
 
+        # Damier
         self.patternSize=patternSize
         self.squaresize=squaresize #utiliser des unités SI svp
         # Déclaration des points 3D et taille du damier 7x7
@@ -35,17 +35,20 @@ class StereoCalibration():
         self.single_detected_path=single_detected_path
         self.stereo_detected_path=stereo_detected_path
 
-        # Créer/Vider les folders
+        # Créer/Vider les folders ou enregistrer les coins détectés
         outputClean([single_detected_path,stereo_detected_path])
 
-        # Déclaration des variables
+        # Déclaration des variables qui seront enregistrées plus tard
         self.imageSize1, self.imageSize2 = None, None
         self.err1, self.M1, self.d1, self.r1, self.t1 = None, None, None, None, None
         self.err2, self.M2, self.d2, self.r2, self.t2 = None, None, None, None, None
-        self.errStereo, self.R, self.T = None, None, None,
+        self.errStereo, self.R, self.T = None, None, None
+        # points de la calibration individuelle
+        self.objpoints_l,self.objpoints_r, self.imgpoints_l, self.imgpoints_r=None, None, None, None
 
         # Flags:
         self.not_fisheye_flags = cv2.CALIB_FIX_K3|cv2.CALIB_ZERO_TANGENT_DIST
+        # self.not_fisheye_flags=0
         self.fisheye_flags=cv2.CALIB_RATIONAL_MODEL|cv2.CALIB_FIX_K5|cv2.CALIB_FIX_K6|cv2.CALIB_ZERO_TANGENT_DIST
 
 
@@ -96,6 +99,7 @@ class StereoCalibration():
         if not skipdetection:
             self.objpoints_l, self.imgpoints_l, self.imageSize1 = self.read_single('left')
             self.objpoints_r, self.imgpoints_r, self.imageSize2 = self.read_single('right')
+
         if fisheye==True:
             self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv2.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=self.fisheye_flags)
 
@@ -197,6 +201,63 @@ class StereoCalibration():
         f.write('Erreur cam 1: {}\n'.format(self.err1))
         f.write('Erreur cam 2: {}\n'.format(self.err2))
         f.write('Erreur stéréo: {}\n'.format(self.errStereo))
+        f.close()
+
+    def saveConf(self, fname):
+
+        # On extrait les valeurs qui nous intéresse dans la matrice gauche
+        fx_l = self.M1[0][0]
+        cx_l = self.M1[0][2]
+        fy_l = self.M1[1][1]
+        cy_l = self.M1[1][2]
+        k1_l = self.d1[0][0]
+        k2_l = self.d1[0][1]
+        k3_l = self.d1[0][4]
+        p1_l = self.d1[0][2]
+        p2_l = self.d1[0][3]
+
+        # On extrait les valeurs qui nous intéresse dans la matrice droite
+        fx_r = self.M2[0][0]
+        cx_r = self.M2[0][2]
+        fy_r = self.M2[1][1]
+        cy_r = self.M2[1][2]
+        k1_r = self.d2[0][0]
+        k2_r = self.d2[0][1]
+        k3_r = self.d2[0][4]
+        p1_r = self.d2[0][2]
+        p2_r = self.d2[0][3]
+
+        # On extrait la distance entre les deux lentilles
+        baseline = self.T[0][0]*1e3 #mm
+        #baseline = baseline * squaresize * 10
+
+        # Sauvegarde des données dans un fichier
+        f = open("{}.conf".format(fname), "w+")
+        f.write("[LEFT_CAM_VGA] \n")
+        f.write("fx=" + str(fx_l) + "\n")
+        f.write("fy=" + str(fy_l) + "\n")
+        f.write("cx=" + str(cx_l) + "\n")
+        f.write("cy=" + str(cy_l) + "\n")
+        f.write("k1=" + str(k1_l) + "\n")
+        f.write("k2=" + str(k2_l) + "\n")
+        f.write("k3=" + str(k3_l) + "\n")
+        f.write("p1=" + str(p1_l) + "\n")
+        f.write("p2=" + str(p2_l) + "\n")
+        f.write("\n")
+        f.write("[RIGHT_CAM_VGA] \n")
+        f.write("fx=" + str(fx_r) + "\n")
+        f.write("fy=" + str(fy_r) + "\n")
+        f.write("cx=" + str(cx_r) + "\n")
+        f.write("cy=" + str(cy_r) + "\n")
+        f.write("k1=" + str(k1_r) + "\n")
+        f.write("k2=" + str(k2_r) + "\n")
+        f.write("k3=" + str(k3_r) + "\n")
+        f.write("p1=" + str(p1_r) + "\n")
+        f.write("p2=" + str(p2_r) + "\n")
+        f.write("\n")
+        f.write("[STEREO] \n")
+        f.write("Baseline=" + str(baseline) + "\n")
+        f.write("\n")
         f.close()
 
     def reprojection(self, folder):
