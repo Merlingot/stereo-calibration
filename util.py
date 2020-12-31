@@ -6,6 +6,20 @@ Auteur: Marinouille
 import os, cv2
 import numpy as np
 
+
+def coins_damier(patternSize,squaresize):
+    objp = np.zeros((patternSize[0]*patternSize[1], 3), np.float32)
+    objp[:, :2] = np.mgrid[0:patternSize[0], 0:patternSize[1]].T.reshape(-1, 2)
+    objp*=squaresize
+    return objp
+
+def centres_damier(patternSize,squaresize):
+    objp = np.zeros(((patternSize[0]-1)*(patternSize[1]-1), 3), np.float32)
+    objp[:, :2] = np.mgrid[0:patternSize[0]-1, 0:patternSize[1]-1].T.reshape(-1, 2)
+    objp*=squaresize
+    objp+=np.array([0.5,0.5,0])*squaresize
+    return objp
+
 def read_images(image):
     color=cv2.imread(image)
     gray=cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)

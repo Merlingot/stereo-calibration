@@ -1,18 +1,22 @@
 import numpy as np
-import cv2
-
-import math
+import cv2 as cv
 
 from util import readXML
 
 
 
 ##############################################################################
+class Resolution :
+    def __init__(self,width, height):
+        self.width = int(width)
+        self.height = int( height)
+##############################################################################
+
+
+##############################################################################
 def get_image_dimension_from_resolution(resolution):
 
     if resolution== 'VGA' :
- #       width=672
-#        height=376
         width=800
         height=480
     elif resolution== 'HD' :
@@ -37,26 +41,24 @@ def init_calibration(left_xml, right_xml, image_size, resolution) :
 
 
     # READ .XML FILE -------
-    cameraMatrix_left,distCoeffs_left, _, _ ,_, E, F = readXML(left_xml) # left
-    cameraMatrix_right,distCoeffs_right, R, T ,_, _, _ = readXML(right_xml) # right
+    K1,d1, _, _ ,_, E, F = readXML(left_xml) # left
+    K2,d2, R, T ,_, _, _ = readXML(right_xml) # right
 
-    R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(cameraMatrix1=cameraMatrix_left,
-                                       cameraMatrix2=cameraMatrix_right,
-                                       distCoeffs1=distCoeffs_left,
-                                       distCoeffs2=distCoeffs_right,
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1,
+                                       cameraMatrix2=K2,
+                                       distCoeffs1=d1,
+                                       distCoeffs2=d2,
                                        R=R, T=T,
-                                       flags=cv2.CALIB_ZERO_DISPARITY,
+                                       flags=0,
                                        alpha=0,
                                        imageSize=(image_size.width, image_size.height),
                                        newImageSize=(image_size.width, image_size.height))
 
-    map_left_x, map_left_y = cv2.initUndistortRectifyMap(cameraMatrix_left, distCoeffs_left, R1, P1, (image_size.width, image_size.height), cv2.CV_32FC1)
-    map_right_x, map_right_y = cv2.initUndistortRectifyMap(cameraMatrix_right, distCoeffs_right, R2, P2, (image_size.width, image_size.height), cv2.CV_32FC1)
+    map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (image_size.width, image_size.height), cv.CV_32FC1)
+    map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (image_size.width, image_size.height), cv.CV_32FC1)
 
-    cameraMatrix_left = P1
-    cameraMatrix_right = P2
 
-    return cameraMatrix_left, cameraMatrix_right, map_left_x, map_left_y, map_right_x, map_right_y, Q
+    return P1, P2, map_left_x, map_left_y, map_right_x, map_right_y, Q, R1, K1, d1
 
 ###############################################################################
 
@@ -70,8 +72,8 @@ def init_calibration(left_xml, right_xml, image_size, resolution) :
 
 def get_rectified_left_right(left_frame,right_frame, map_left_x, map_left_y, map_right_x, map_right_y):
 
-    left_frame_rect = cv2.remap(left_frame, map_left_x, map_left_y, interpolation=cv2.INTER_LINEAR)
-    right_frame_rect = cv2.remap(right_frame, map_right_x, map_right_y, interpolation=cv2.INTER_LINEAR)
+    left_frame_rect = cv.remap(left_frame, map_left_x, map_left_y, interpolation=cv.INTER_LINEAR)
+    right_frame_rect = cv.remap(right_frame, map_right_x, map_right_y, interpolation=cv.INTER_LINEAR)
 
     return left_frame_rect,right_frame_rect
 ##############################################################################
