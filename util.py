@@ -88,7 +88,7 @@ def refine_corners(patternSize, objpoints, imgpoints, objp, corners, color, crit
         cv2.imwrite(detected_path + fname, color)
 
 
-def outputClean(output_paths):
+def clean_folders(output_paths):
     for path in output_paths:
         if not os.path.exists(path):
             os.makedirs(path)
