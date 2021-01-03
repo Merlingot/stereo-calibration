@@ -106,6 +106,7 @@ class StereoCalibration():
         """
         self.single_path=single_path
         self.single_detected_path=single_detected_path
+        clean_folders([single_detected_path])
 
         self.objpoints_l, self.imgpoints_l, self.imageSize1 = self.__read_single('left')
         self.objpoints_r, self.imgpoints_r, self.imageSize2 = self.__read_single('right')
@@ -138,6 +139,7 @@ class StereoCalibration():
         """
         self.stereo_path=stereo_path
         self.stereo_detected_path=stereo_detected_path
+        clean_folders([stereo_detected_path])
         if not calib_2_sets:
             single_path=stereo_path
             single_detected_path=stereo_detected_path
@@ -280,7 +282,7 @@ class StereoCalibration():
 
     def reprojection(self, folder):
         """ Dessiner la reprojection """
-        # outputClean([folder])
+        clean_folders([folder])
 
         images_left = np.sort(glob.glob(self.single_path + 'left*.jpg'))
         images_right = np.sort(glob.glob(self.single_path + 'right*.jpg'))

@@ -9,6 +9,7 @@ __pycache__/
 #Fichier spécifiques à ce projet
 *.ply
 *.conf
+*.xml
 
 #Images
 *.png
