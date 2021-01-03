@@ -15,19 +15,8 @@ class Resolution :
 
 ##############################################################################
 def get_image_dimension_from_resolution(resolution):
-
-    if resolution== 'VGA' :
-        width=800
-        height=480
-    elif resolution== 'HD' :
-        width=1280
-        height=720
-    elif resolution== 'FHD' :
-        width=1920
-        height=1080
-    elif resolution== '2K' :
-        width=2208
-        height=1242
+    width=800
+    height=480
     return width,height
 ##############################################################################
 
@@ -35,7 +24,6 @@ def get_image_dimension_from_resolution(resolution):
 
 ##############################################################################
 # THIS FONCTION READS CALIBRATION FILE AND OUTPUTS MATRICES AND COEFFICIENTS
-## SEE EXAMPLE SN20716499.conf FOR CORRECT FORMAT
 
 def init_calibration(left_xml, right_xml, image_size, resolution) :
 
@@ -58,7 +46,7 @@ def init_calibration(left_xml, right_xml, image_size, resolution) :
     map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (image_size.width, image_size.height), cv.CV_32FC1)
 
 
-    return P1, P2, map_left_x, map_left_y, map_right_x, map_right_y, Q, R1, K1, d1
+    return P1, P2, map_left_x, map_left_y, map_right_x, map_right_y, Q, R1, K1, d1, R2, K2, d2
 
 ###############################################################################
 

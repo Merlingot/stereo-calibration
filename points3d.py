@@ -7,21 +7,34 @@ from stereo_tools import *
 from util import *
 
 
+
+
+
+
 class Camera():
 
-    def __init__(self, cameraMatrix, distCoeffs, rectificationMatix, projectionMatrix, not_rectified, rectified):
+    def __init__(self, cameraMatrix, distCoeffs, rectificationMatix, projectionMatrix, map_x, map_y):
 
         self.K=cameraMatrix
         self.D=distCoeffs
         self.R=rectificationMatix
         self.P=projectionMatrix
+        self.map_x=map_x
+        self.map_y=map_y
+        self.Q=None
 
-        self.not_rectified=not_rectified
-        self.rectified=rectified
+    def set_images(self, fname):
+        # LIRE IMAGES ORIGINALES -----------------------------------------------
+        self.not_rectified=cv.imread(fname)
+        # assert self.not_rectified!=None, 'cv.imread failed'
+        # ----------------------------------------------------------------------
+        # RECTIFICATION --------------------------------------------------------
+        self.rectified = cv.remap(self.not_rectified, self.map_x, self.map_y, interpolation=cv.INTER_LINEAR)
+        # ----------------------------------------------------------------------
 
 
 
-def get_cameras(left_xml, right_xml, left, right):
+def get_cameras(left_xml, right_xml):
 
     # RESOLUTION ET TAILLE -----------------------------------------------------
     resolution='VGA'
@@ -30,26 +43,26 @@ def get_cameras(left_xml, right_xml, left, right):
     # --------------------------------------------------------------------------
 
     # LIRE FICHIERS DE CALIBRATION ---------------------------------------------
-    P1, P2, map_left_x, map_left_y, map_right_x, map_right_y, Q, R1, K1, D1 = init_calibration(left_xml,right_xml,image_size, resolution)
-    # --------------------------------------------------------------------------
-
-    # LIRE IMAGES ORIGINALES ---------------------------------------------------
-    not_rectifiedL=cv.imread(left)
-    not_rectifiedR=cv.imread(right)
+    K1,d1, _, _ ,_, _, _ = readXML(left_xml) # left
+    K2,d2, R, T ,_, _, _ = readXML(right_xml) # right
     # --------------------------------------------------------------------------
 
     # RECTIFICATION ------------------------------------------------------------
-    rectifiedL,rectifiedR= get_rectified_left_right(not_rectifiedL,not_rectifiedR, map_left_x, map_left_y, map_right_x, map_right_y)
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=0, alpha=0,
+    imageSize=(image_size.width, image_size.height), newImageSize=(image_size.width, image_size.height))
+
+    map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (image_size.width, image_size.height), cv.CV_32FC1)
+    map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (image_size.width, image_size.height), cv.CV_32FC1)
     # --------------------------------------------------------------------------
 
     # CAMÉRAS ------------------------------------------------------------------
-    cam1 = Camera(K1,D1,R1,P1, not_rectifiedL, rectifiedL)
-    cam2 = Camera(K2,D2,R2,P2, not_rectifiedR, rectifiedR)
+    cam1 = Camera(K1,d1,R1,P1,map_left_x,map_left_y); cam1.Q=Q
+    cam2 = Camera(K2,d2,R2,P2,map_right_x,map_right_y)
     # --------------------------------------------------------------------------
 
     return cam1, cam2
 
-def calcul_points3d(rectifiedL, rectifiedR, Q):
+def calcul_mesh(rectifiedL, rectifiedR, QL):
 
     # CREATION STEREO MATCHERS -------------------------------------------------
     num_disp = 5*16
@@ -123,7 +136,7 @@ def calcul_points3d(rectifiedL, rectifiedR, Q):
     disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
 
     # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system
-    points = (-1)*cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
+    points = (-1)*cv.reprojectImageTo3D(disparity, QL, handleMissingValues=True)
 
     # depth map
     depth_map=points[:,:,2]*mask
@@ -135,20 +148,20 @@ def calcul_points3d(rectifiedL, rectifiedR, Q):
     return points, mask, depth_map
 
 
-def save_mesh(color_image, points, mask, fname):
+def save_mesh(rectified, points, mask, mesh_name):
 
     # SAVEGARDER MESH ----------------------------------------------------------
-    colors = cv.cvtColor(color_image, cv.COLOR_BGR2RGB)
+    colors = cv.cvtColor(rectified, cv.COLOR_BGR2RGB)
     colors_valides = colors[mask.astype(bool)]
     points_valides=points[mask.astype(bool)]
-    out_fn = '3dpoints/{}.ply'.format(fname)
+    out_fn = '3dpoints/{}.ply'.format(mesh_name)
     write_ply(out_fn, points_valides, colors_valides)
     # --------------------------------------------------------------------------
 
 
-def find_rt(squaresize, patternSize, not_rectified, rectified, K, D):
+def find_rt(squaresize, patternSize, not_rectified, K, D):
     """
-    Trouver la transformation (r,t) qui amène du référentiel de la caméra 1 rectifiée (Xc,Yc,Zc)_rec au référentiel monde (Xw, Yw,Zw)
+    Trouver la transformation (r,t) qui amène du référentiel de la caméra rectifiée (Xc,Yc,Zc)_rec au référentiel monde (Xw, Yw,Zw)
 
     R1: performs a change of basis from the unrectified first camera's coordinate system to the rectified first camera's coordinate system.
     P1 : projects points given in the rectified first camera coordinate system into the rectified first camera's image
@@ -181,11 +194,11 @@ def find_rt(squaresize, patternSize, not_rectified, rectified, K, D):
     return r, t
 
 
-def test_rt(squaresize, patternSize, not_rectified, rectified, K, D, R, P, r, t):
+def err_rt(squaresize, patternSize, not_rectified, rectified, K, D, R, P, r, t):
 
     # DÉTECTION DES COINS DANS L'IMAGE NON RECTIFIÉE ---------------------------
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    # Trouver coins dans l'image originale prise par la caméra
+    # Trouver coins dans l'image originale prise par la caméra de gauche
     gray=cv.cvtColor(not_rectified, cv.COLOR_BGR2GRAY)
     ret, corners_unrec = cv.findChessboardCorners(gray, patternSize, None)
     if ret :
@@ -202,7 +215,6 @@ def test_rt(squaresize, patternSize, not_rectified, rectified, K, D, R, P, r, t)
         corners_rec = cv.cornerSubPix(gray, corners_rec, (11, 11),(-1, -1), criteria)
     assert ret==True, "coins non détectés"
     # --------------------------------------------------------------------------
-
 
     # PROJECTION DES COORD MONDE -----------------------------------------------
     # Coordonées des coins du damier dans le référentiel monde:
@@ -225,69 +237,174 @@ def test_rt(squaresize, patternSize, not_rectified, rectified, K, D, R, P, r, t)
     err_unrec = np.sqrt( np.mean( np.sum( (corners_unrec-img_unrec)**2, axis=2 )  )  )
     # Référentiel rectifié
     err_rec = np.sqrt( np.mean( np.sum( (corners_rec-img_rec)**2, axis=2 ) )  )
+    # --------------------------------------------------------------------------
+    return err_unrec, err_rec
 
-    print('erreurs de reprojection: référentiels non rectifié et rectifié')
-    print(err_unrec, err_rec)
+def coins_carte(patternSize, squaresize, r, t, R, P, points):
+    """
+    Arrange des vecteurs contenant les points théoriques et les points calculés à partir de la carte de disparité
+    Args:
+        patternSize : (row,col)
+        squaresize : m
+        r,t : transformation rigide
+        R, P : transformations rectification
+        points : nuage de point 3d dans le référentiel rectifié
+    Returns:
+        rec
+        pts_rec
+        corner_rec
+    """
+
+    # COINS THÉORIQUES ---------------------------------------------------------
+    objp=coins_damier(patternSize,squaresize); world=objp.T
+    unrec=r@world+t #coins théoriques dans ref cam non rectifiée
+    rec=R@unrec #points théoriques dans ref cam rectifiée
+    corners_rec, _ = cv.projectPoints(rec, np.zeros((3,1)), np.zeros((3,1)), P[:,:3], np.zeros((1,4))) #points théoriques dans ref image cam rectifiée
     # --------------------------------------------------------------------------
 
-def erreur(patternSize, r, t, corners_rec, rec, world, points):
-
-    # COMPRAISON DES COINS DANS LA CARTE DE PROFONDEUR -------------------------
-    # 1. Référentiel caméra 1 rectifiée -----------
-    # On prend les coins images et on trouve l'équivalent 3D calculé
+    # COINS DE LA CARTE DE PROFONDEUR ------------------------------------------
     pts_rec=[]
     for i in range(len(corners_rec)):
         col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
         pt = points[row,col]
         pts_rec.append(pt)
     pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
+    # --------------------------------------------------------------------------
+
+    return rec, pts_rec, corners_rec
 
 
-    # ERREUR -------------------------------------------------------------------
+
+def err_points(patternSize, pts_th, pts_cal):
+    """
+    Calcule l'erreur entre les points théoriques pts_th et les points calculés pts_cal. Les points sont les coins d'un damier.
+    Args:
+        patternSize : (row,col)
+        pts_th : points théoriques.
+        pts_cal : points calculées.
+    Returns:
+        errtot : erreur RMS totale sur la position
+        (errx,erry,errz): erreur RMS sur les coordonées x,y,z
+                          - en coordonées cartésiennes -
+        (err_rayon, err_theta) : erreur RMS sur le rayon et sur l'angle theta
+                                 -en coordonées cyclindriques r,theta,z-
+    """
+
     arr=np.zeros((patternSize[1],patternSize[0]))
     x,y,z=arr.copy(), arr.copy(), arr.copy()
     xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
     j=0;n=9
     for i in range(patternSize[1]):
-        x[i,:]=pts_rec[0,j:j+n]; y[i,:]=pts_rec[1,j:j+n]; z[i,:]=pts_rec[2,j:j+n]
-        xo[i,:]=rec[0,j:j+n]; yo[i,:]=rec[1,j:j+n]; zo[i,:]=rec[2,j:j+n]
+        x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
+        xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
         j+=n
 
-    errX=np.absolute(xo-x); errY=np.absolute(yo-y); errZ=np.absolute(zo-z)
-    errRMS=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
-    return errRMS
+    # Erreur en coordonées cartésiennes:
+    errX=xo-x; errY=yo-y; errZ=zo-z
+    errx = np.sqrt((errX**2).mean())
+    erry = np.sqrt((errY**2).mean())
+    errz = np.sqrt((errZ**2).mean())
+
+    # Erreur totale
+    errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
+
+    # Erreur en coordonées cylindriques, r=x^2+y^2, theta=tan(y/x)
+    rayono = np.sqrt( xo**2 + yo**2  )
+    rayon = np.sqrt( x**2 + y**2  )
+    err_r = rayono-rayon
+    err_rayon = np.sqrt((err_r**2).mean())
+
+    thetao = np.arctan(yo/xo)
+    theta = np.arctan(y/x)
+    err_t = (thetao-theta)
+    err_theta = np.sqrt( (err_t[~np.isnan(err_t)]**2).mean() )
+
+    return errtot, (errx, erry, errz), (err_rayon, err_theta)
 
 
 
+def triangulation_world(patternSize, squaresize, K1, K2, D1, D2, left, right):
+
+    # LIRE IMAGES ET TROUVER POINTS --------------------------------------------
+    grayl=cv.cvtColor(left, cv.COLOR_BGR2GRAY)
+    grayr=cv.cvtColor(right, cv.COLOR_BGR2GRAY)
+    # trouver
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+    ret_l, corners_l = cv.findChessboardCorners(grayl, patternSize, None)
+    ret_r, corners_r = cv.findChessboardCorners(grayr, patternSize, None)
+    if ret_l*ret_r :
+        pts_l= cv.cornerSubPix(grayl, corners_l, (11, 11),(-1, -1), criteria)
+        pts_r= cv.cornerSubPix(grayr, corners_r, (11, 11),(-1, -1), criteria)
+    # --------------------------------------------------------------------------
+
+
+    # MATRICES DE PROJECTION ---------------------------------------------------
+    objp = coins_damier(patternSize,squaresize)
+    ret, rvec1, t1 = cv.solvePnP(objp, pts_l, K1, D1 )
+    ret, rvec2, t2 = cv.solvePnP(objp, pts_r, K2, D2 )
+    r1, _=cv.Rodrigues(rvec1); r2, _=cv.Rodrigues(rvec2)
+    p1=np.column_stack((r1,t1)); Proj1=K1@p1
+    p2=np.column_stack((r2,t2)); Proj2=K2@p2
+    # --------------------------------------------------------------------------
+
+    # UNDISTORT POINTS ---------------------------------------------------------
+    ptsl=cv.undistortPoints(pts_l, K1, D1, None, None, K1) #not rectification
+    ptsr=cv.undistortPoints(pts_r, K2, D2, None, None, K2) #not rectification
+    N=ptsl.shape[0]
+    projPoints1 = np.zeros((2,N))
+    projPoints2 = np.zeros((2,N))
+    for i in range(N):
+        projPoints1[:,i]=ptsl[i,0]
+        projPoints2[:,i]=ptsr[i,0]
+    # --------------------------------------------------------------------------
+
+    # TRIANGULATION ------------------------------------------------------------
+    points4D=cv.triangulatePoints(Proj1, Proj2, projPoints1, projPoints2)
+    points3D=cv.convertPointsFromHomogeneous(points4D.T)
+
+    X,Y,Z=points3D[:,0,0], points3D[:,0,1], points3D[:,0,2]
+    points=np.stack((X,Y,Z))
+    # --------------------------------------------------------------------------
+
+    return points
 
 
 
+def triangulation_rec(patternSize, cam1, cam2, left, right):
 
 
+    # LIRE IMAGES ET TROUVER POINTS --------------------------------------------
+    grayl=cv.cvtColor(left, cv.COLOR_BGR2GRAY)
+    grayr=cv.cvtColor(right, cv.COLOR_BGR2GRAY)
+    # Détection des coins
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+    ret_l, corners_l = cv.findChessboardCorners(grayl, patternSize, None)
+    ret_r, corners_r = cv.findChessboardCorners(grayr, patternSize, None)
+    if ret_l*ret_r :
+        pts_l= cv.cornerSubPix(grayl, corners_l, (11, 11),(-1, -1), criteria)
+        pts_r= cv.cornerSubPix(grayr, corners_r, (11, 11),(-1, -1), criteria)
+    # --------------------------------------------------------------------------
 
+    # RECTIFY POINTS -----------------------------------------------------------
+    # Rectification
+    pts_l=cv.undistortPoints(pts_l, cam1.K, cam1.D, None, cam1.R, cam1.P)
+    pts_r=cv.undistortPoints(pts_r, cam2.K, cam2.D, None, cam2.R, cam2.P)
+    # Formatage
+    N=pts_l.shape[0]
+    projPoints1 = np.zeros((2,N))
+    projPoints2 = np.zeros((2,N))
+    for i in range(N):
+        projPoints1[:,i]=pts_l[i,0]
+        projPoints2[:,i]=pts_r[i,0]
+    # --------------------------------------------------------------------------
 
-# ############ MESH #######################################################
-#
-# out_points=points[mask.astype(bool)]
-# # Coordonnées cam 1 rectifiée
-# colors = cv.cvtColor(rectified, cv.COLOR_BGR2RGB)
-# out_colors = colors[mask.astype(bool)]
-# rec_points = out_points.T
-# out_fn = '3dpoints/out_rec_{}.ply'.format(nb)
-# write_ply(out_fn, rec_points.T, out_colors)
-#
-# # Coordonnées cam 1 non-rectifiée
-# colors = cv.cvtColor(not_rectified, cv.COLOR_BGR2RGB)
-# out_colors = colors[mask.astype(bool)]
-# unrec_points = R1.T@rec_points
-# out_fn = '3dpoints/out_unrec_{}.ply'.format(nb)
-# write_ply(out_fn, unrec_points.T, out_colors)
-#
-# # Coordonnées monde
-# colors = cv.cvtColor(not_rectified, cv.COLOR_BGR2RGB)
-# out_colors = colors[mask.astype(bool)]
-# world_points = r.T@(unrec_points-t)
-# out_fn = '3dpoints/out_world_{}.ply'.format(nb)
-# write_ply(out_fn, world_points.T, out_colors)
+    # TRIANGULATION ------------------------------------------------------------
+    # triangulatePoints: If the projection matrices from stereoRectify are used, then the returned points are represented in the first camera's rectified coordinate system.
+    points4D=cv.triangulatePoints(cam1.P, cam2.P, projPoints1, projPoints2)
+    points3D=cv.convertPointsFromHomogeneous(points4D.T)
 
-# normalized = (255-cv.normalize(depth_map,  None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
+    X,Y,Z=points3D[:,0,0], points3D[:,0,1], points3D[:,0,2]
+    points=np.stack((X,Y,Z))
+    # --------------------------------------------------------------------------
+
+    return points
