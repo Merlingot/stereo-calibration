@@ -2,23 +2,23 @@ from modules.util import *
 from modules.points3d import *
 
 
-# CHOISIR UNE IMAGE À ANALYSER :
-fleft = 'captures/captures_calibration/left10.jpg'
-fright = 'captures/captures_calibration/right10.jpg'
-
+# Choisir une image à analyser -------------------------------------------------
+fleft = 'captures/captures_calibration/left1.jpg'
+fright = 'captures/captures_calibration/right1.jpg'
+# ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
-
+# Damier -----------------------------------------------------------------------
 patternSize=(10,8)
 squaresize=2e-2
+# ------------------------------------------------------------------------------
+
 
 cam1,cam2=get_cameras(left_xml, right_xml)
 cam1.set_images(fleft)
 cam2.set_images(fright)
-# ------------------------------------------------------------------------------
-
 
 # CALCUL DE TOUS LES COINS THÉORIQUES POUR LA CAMÉRA 1 -------------------------
 
@@ -78,22 +78,22 @@ points_monde1 = r.T@(points_unrec1-t) # Référentiel monde
 
 # RÉFÉRENTIEL REC
 plt.plot(rec1[0,:], rec1[1,:], 'o-') # théorique
-plt.plot(points_rec1[0,:], points_rec1[1,:], 'o') # détecté
+plt.plot(points_rec1[0,:], points_rec1[1,:], '.-') # détecté
 
 plt.plot(rec1[0,:], rec1[2,:], 'o-')
-plt.plot(points_rec1[0,:], points_rec1[2,:], 'o')
+plt.plot(points_rec1[0,:], points_rec1[2,:], '.-')
 
 plt.plot(rec1[1,:], rec1[2,:], 'o-')
-plt.plot(points_rec1[1,:], points_rec1[2,:], 'o')
+plt.plot(points_rec1[1,:], points_rec1[2,:], '.-')
 
 
 # RÉFÉRENTIEL MONDE
-plt.plot(world[0,:], world[1,:], 'o-') # théorique
-plt.plot(points_monde1[0,:], points_monde1[1,:], '.-') # détecté
-
-plt.plot(world[0,:], world[2,:], 'o-')
-plt.plot(points_monde1[0,:], points_monde1[2,:], '.-')
-
-plt.plot(world[1,:], world[2,:], 'o-')
-plt.plot(points_monde1[1,:], points_monde1[2,:], '.-')
+# plt.plot(world[0,:], world[1,:], 'o-') # théorique
+# plt.plot(points_monde1[0,:], points_monde1[1,:], '.-') # détecté
+#
+# plt.plot(world[0,:], world[2,:], 'o-')
+# plt.plot(points_monde1[0,:], points_monde1[2,:], '.-')
+#
+# plt.plot(world[1,:], world[2,:], 'o-')
+# plt.plot(points_monde1[1,:], points_monde1[2,:], '.-')
 # ------------------------------------------------------------------------------

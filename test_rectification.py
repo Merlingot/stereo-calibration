@@ -1,24 +1,25 @@
 from modules.util import *
 from modules.points3d import *
 
-# CHOISIR UNE IMAGE À ANALYSER :
-fleft = 'captures/captures_calibration/left10.jpg'
-fright = 'captures/captures_calibration/right10.jpg'
 
+# Choisir une image à analyser -------------------------------------------------
+fleft = 'captures/captures_calibration/left1.jpg'
+fright = 'captures/captures_calibration/right1.jpg'
+# ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
-_,_, _, _ ,_,E, F = readXML(left_xml) # left
-
+# Damier -----------------------------------------------------------------------
 patternSize=(10,8)
 squaresize=2e-2
+# ------------------------------------------------------------------------------
 
+
+_,_, _, _ ,_,E, F = readXML(left_xml) # left
 cam1,cam2=get_cameras(left_xml, right_xml)
 cam1.set_images(fleft)
 cam2.set_images(fright)
-# ------------------------------------------------------------------------------
-
 
 world_th=coins_damier(patternSize,squaresize).T
 

@@ -8,3 +8,4 @@ Fichiers:
 # Tests de validité
 
 - test_rectification.py : teste si la rectification est bonne
+- test_triangulation.py :  teste si la triangulation fonctionne bien
