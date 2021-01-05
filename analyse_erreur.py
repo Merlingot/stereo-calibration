@@ -5,12 +5,8 @@ from modules.util import *
 # Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
-cam1, cam2 = get_cameras(left_xml, right_xml)
-
 patternSize=(10,8)
 squaresize=2e-2
-objp = coins_damier(patternSize,squaresize)
-world = objp.T
 # ------------------------------------------------------------------------------
 
 
@@ -22,7 +18,12 @@ errxyz1 = []
 errxyz2 = []
 errcyl1 = []
 errcyl2 = []
+# Damier et caméras ------------------------------------------------------------
+objp = coins_damier(patternSize,squaresize)
+world = objp.T
+cam1, cam2 = get_cameras(left_xml, right_xml)
 # ------------------------------------------------------------------------------
+
 
 for nb in range(1,10):
 
@@ -60,14 +61,16 @@ plt.figure()
 plt.title('Erreur rms sur le rayon')
 plt.xlabel('# image')
 plt.ylabel('Erreur (mm)')
-# plt.plot(N, np.array(errcyl1)[:,0]*1e3, 'bo-')
+plt.ylim(0,25)
+plt.plot(N, np.array(errcyl1)[:,0]*1e3, 'bo-')
 plt.plot( N, np.array(errcyl2)[:,0]*1e3, 'ro-')
-# plt.legend(['carte de disparité', 'triangulation'])
+plt.legend(['carte de disparité', 'triangulation'])
 
 plt.figure()
 plt.title('Erreur rms sur la position en z')
 plt.xlabel('# image')
 plt.ylabel('Erreur (mm)')
-# plt.plot(N, np.array(errxyz1)[:,2]*1e3, 'bo-')
+plt.ylim(0,50)
+plt.plot(N, np.array(errxyz1)[:,2]*1e3, 'bo-')
 plt.plot( N, np.array(errxyz2)[:,2]*1e3, 'ro-')
-# plt.legend(['carte de disparité', 'triangulation'])
+plt.legend(['carte de disparité', 'triangulation'])

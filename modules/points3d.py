@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob, os
 
-from modules.stereo_tools import *
+from modules.stereo_tools import get_image_dimension_from_resolution, Resolution
 from modules.util import *
 
 
@@ -44,7 +44,7 @@ def get_cameras(left_xml, right_xml):
     # --------------------------------------------------------------------------
 
     # RECTIFICATION ------------------------------------------------------------
-    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=0, alpha=-1,
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=0,
     imageSize=(image_size.width, image_size.height), newImageSize=(image_size.width, image_size.height))
 
     map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (image_size.width, image_size.height), cv.CV_32FC1)
@@ -58,12 +58,12 @@ def get_cameras(left_xml, right_xml):
 
     return cam1, cam2
 
-def calcul_mesh(rectifiedL, rectifiedR, QL):
+def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # CREATION STEREO MATCHERS -------------------------------------------------
     num_disp = 5*16
     min_disp= 1
-    wsize = 3
+    wsize = 5
     left_matcher = cv.StereoSGBM_create(
             minDisparity=min_disp,
             numDisparities=num_disp,
@@ -77,7 +77,7 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
 
     # FORMATAGE PRE-CALCUL -----------------------------------------------------
     # DOWNSCALE
-    downscale=1
+    downscale=2
     new_num_disp = int(num_disp / downscale)
     n_width = int(rectifiedL.shape[1] * 1/downscale)
     n_height = int(rectifiedR.shape[0] * 1/downscale)
@@ -96,13 +96,13 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
     # CALCULS DISPARITÉ --------------------------------------------------------
     displ = left_matcher.compute(cv.UMat(grayL_down),cv.UMat(grayR_down))
     dispr = right_matcher.compute(cv.UMat(grayR_down),cv.UMat(grayL_down))
-    displ = cv.UMat.get(displ)
-    dispr = cv.UMat.get(dispr)
+    displ = np.int16(cv.UMat.get(displ))
+    dispr = np.int16(cv.UMat.get(dispr))
     # --------------------------------------------------------------------------
 
     # WLS FILTER ---------------------------------------------------------------
     lambda_wls = 8000.0
-    sigma_wls = 1.0
+    sigma_wls = 1.5
     wls_filter = cv.ximgproc.createDisparityWLSFilter(matcher_left=left_matcher)
     wls_filter.setLambda(lambda_wls)
     wls_filter.setSigmaColor(sigma_wls)
@@ -120,7 +120,7 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
     # --------------------------------------------------------------------------
 
     # BILATERAL FILTER ---------------------------------------------------------
-    fbs_spatial=8.0
+    fbs_spatial=18.0
     fbs_luma=8.0
     fbs_chroma=8.0
     fbs_lambda=128.0
@@ -132,13 +132,10 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
     disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
 
     # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system
-    points = cv.reprojectImageTo3D(disparity, QL, handleMissingValues=True)
+    points = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 
     # depth map
     depth_map=points[:,:,2]*mask
-    # plt.figure()
-    # plt.imshow(depth_map)
-    # plt.savefig('depth_map_{}.png'.format(nb))
     # -------------------------------------------------------------------------
 
     return points, mask, depth_map
