@@ -1,23 +1,26 @@
 from modules.util import *
 from modules.points3d import *
 
-# LIRE FICHIERS DE CALIBRATION ---------------------------------------------
+# CHOISIR UNE IMAGE À ANALYSER :
+fleft = 'captures/captures_calibration/left10.jpg'
+fright = 'captures/captures_calibration/right10.jpg'
+
+
+# Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
 _,_, _, _ ,_,E, F = readXML(left_xml) # left
-# --------------------------------------------------------------------------
 
-# CAMÉRAS  -----------------------------------------------------------------
-cam1, cam2 = get_cameras(left_xml, right_xml)
-cam1.set_images('captures/captures_calibration/left4.jpg')
-cam2.set_images('captures/captures_calibration/right4.jpg')
-# --------------------------------------------------------------------------
-
-# DAMIER SUR LA PHOTO -------------------------------------------------------
 patternSize=(10,8)
 squaresize=2e-2
+
+cam1,cam2=get_cameras(left_xml, right_xml)
+cam1.set_images(fleft)
+cam2.set_images(fright)
+# ------------------------------------------------------------------------------
+
+
 world_th=coins_damier(patternSize,squaresize).T
-# --------------------------------------------------------------------------
 
 not_rectifiedL=cv.cvtColor(cam1.not_rectified, cv.COLOR_RGB2GRAY)
 not_rectifiedR=cv.cvtColor(cam2.not_rectified, cv.COLOR_RGB2GRAY)
