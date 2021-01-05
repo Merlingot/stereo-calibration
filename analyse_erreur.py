@@ -7,8 +7,8 @@ left_xml='cam1.xml'
 right_xml='cam2.xml'
 cam1, cam2 = get_cameras(left_xml, right_xml)
 
-patternSize=(9,6)
-squaresize=3.64e-2
+patternSize=(10,8)
+squaresize=2e-2
 world_th=coins_damier(patternSize,squaresize).T
 
 N=[]
@@ -19,18 +19,19 @@ errxyz2 = []
 errcyl1 = []
 errcyl2 = []
 
+for nb in range(1,3):
 
-for nb in range(1,30):
     N.append(nb)
     # Images à reconstruire:
-    left="stereo/left{}.jpg".format(nb)
-    right="stereo/right{}.jpg".format(nb)
+    left="captures/captures_erreur/left{}.jpg".format(nb)
+    right="captures/captures_erreur/right{}.jpg".format(nb)
     cam1.set_images(left)
     cam2.set_images(right)
 
     # CALCUL AVEC CARTE DE DISPARITÉ  ------------------------------------------
 
-    cloud, mask,_= calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q)
+    cloud, mask, depth_map= calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q)
+    save_mesh(cam1.rectified, cloud, mask, 'mesh_{}'.format(nb))
     r,t = find_rt(squaresize, patternSize, cam1.not_rectified, cam1.K, cam1.D)
     err_rt(squaresize, patternSize, cam1.not_rectified, cam1.rectified, cam1.K, cam1.D, cam1.R, cam1.P, r, t)
 
@@ -48,11 +49,16 @@ for nb in range(1,30):
     errxyz2.append(errxyz)
     errcyl2.append(errcyl)
 
-    # re = triangulation_rec(patternSize, cam1, cam2, cam1.not_rectified, cam2.not_rectified)
+    re = triangulation_rec(patternSize, cam1, cam2, cam1.not_rectified, cam2.not_rectified)
 
-# plt.plot(rec[0,:], rec[1,:], 'o')
+plt.plot(rec[0,:], rec[1,:], 'o')
 # plt.plot(pts_rec[0,:], pts_rec[1,:], 'o')
-# plt.plot(re[0,:], re[1,:], 'o')
+plt.plot(re[0,:], re[1,:], 'o')
+
+plt.plot(world_th[0,:], world_th[1,:], 'o')
+plt.plot(wo[0,:], wo[1,:], 'o')
+
+plt.imshow(depth_map)
 
 plt.figure()
 plt.title('Erreur rms sur le rayon')

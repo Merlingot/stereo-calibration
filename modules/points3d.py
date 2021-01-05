@@ -3,12 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob, os
 
-from stereo_tools import *
-from util import *
-
-
-
-
+from modules.stereo_tools import *
+from modules.util import *
 
 
 class Camera():
@@ -124,7 +120,7 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
     # --------------------------------------------------------------------------
 
     # BILATERAL FILTER ---------------------------------------------------------
-    fbs_spatial=80.0
+    fbs_spatial=8.0
     fbs_luma=8.0
     fbs_chroma=8.0
     fbs_lambda=128.0
@@ -136,7 +132,7 @@ def calcul_mesh(rectifiedL, rectifiedR, QL):
     disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
 
     # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system
-    points = (-1)*cv.reprojectImageTo3D(disparity, QL, handleMissingValues=True)
+    points = cv.reprojectImageTo3D(disparity, QL, handleMissingValues=True)
 
     # depth map
     depth_map=points[:,:,2]*mask
@@ -293,7 +289,7 @@ def err_points(patternSize, pts_th, pts_cal):
     arr=np.zeros((patternSize[1],patternSize[0]))
     x,y,z=arr.copy(), arr.copy(), arr.copy()
     xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
-    j=0;n=9
+    j=0;n=patternSize[0]
     for i in range(patternSize[1]):
         x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
         xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
