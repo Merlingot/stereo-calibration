@@ -14,4 +14,5 @@ stereo_detected_path='output/stereo_detected/'
 obj = StereoCalibration(patternSize, squaresize)
 obj.calibrateStereo(stereo_path, stereo_detected_path, single_detected_path, fisheye=False, calib_2_sets=False)
 obj.saveResultsXML()
-# obj.reprojection('output/reprojection/')
+
+obj.stereo_per_view_err

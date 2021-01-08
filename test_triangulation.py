@@ -3,8 +3,8 @@ from modules.points3d import *
 
 
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures/captures_calibration/left1.jpg'
-fright = 'captures/captures_calibration/right1.jpg'
+fleft = 'captures/captures_calibration/left27.jpg'
+fright = 'captures/captures_calibration/right27.jpg'
 # ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
@@ -27,11 +27,11 @@ objp=coins_damier(patternSize,squaresize)
 world=objp.T
 
 # Référentiel caméra non rectifié
-ret, r ,t=find_rt(patternSize, objp, cam1.not_rectified, cam1.K, cam1.D)
+ret, r ,t =find_rt(patternSize, objp, cam1.not_rectified, cam1.K, cam1.D)
 unrec1=r@world+t #coins théoriques dans ref cam1 non rectifiée
 
-# Référentiel image non rectifié sans distortion
-corners_unrec1, _ = cv.projectPoints(unrec1, np.zeros((3,1)), np.zeros((3,1)), cam1.K, cam1.D) #points théoriques dans ref image cam rectifiée
+# # Référentiel image non rectifié sans distortion
+# corners_unrec1, _ = cv.projectPoints(unrec1, np.zeros((3,1)), np.zeros((3,1)), cam1.K, cam1.D) #points théoriques dans ref image cam rectifiée
 
 # Référentiel rectifié
 rec1=cam1.R@unrec1 #points théoriques dans ref cam rectifiée
@@ -73,19 +73,32 @@ points_unrec1 = cam1.R.T@points_rec1 # Référentiel non rectifié
 points_monde1 = r.T@(points_unrec1-t) # Référentiel monde
 # ------------------------------------------------------------------------------
 
-
 # GRAPHIQUES -------------------------------------------------------------------
 
 # RÉFÉRENTIEL REC
+plt.figure()
+plt.title('Triangulation plan x-y')
+plt.xlabel('x')
+plt.ylabel('y')
 plt.plot(rec1[0,:], rec1[1,:], 'o-') # théorique
 plt.plot(points_rec1[0,:], points_rec1[1,:], '.-') # détecté
+plt.savefig('xy27.png')
 
+plt.figure()
+plt.title('Triangulation plan x-z')
+plt.xlabel('x')
+plt.ylabel('z')
 plt.plot(rec1[0,:], rec1[2,:], 'o-')
 plt.plot(points_rec1[0,:], points_rec1[2,:], '.-')
+plt.savefig('xz27.png')
 
+plt.figure()
+plt.title('Triangulation plan y-z')
+plt.xlabel('y')
+plt.ylabel('z')
 plt.plot(rec1[1,:], rec1[2,:], 'o-')
 plt.plot(points_rec1[1,:], points_rec1[2,:], '.-')
-
+plt.savefig('yz27.png')
 
 # RÉFÉRENTIEL MONDE
 # plt.plot(world[0,:], world[1,:], 'o-') # théorique

@@ -3,8 +3,8 @@ from modules.points3d import *
 
 
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures/captures_calibration/left1.jpg'
-fright = 'captures/captures_calibration/right1.jpg'
+fleft = 'captures/captures_calibration/left2.jpg'
+fright = 'captures/captures_calibration/right2.jpg'
 # ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------

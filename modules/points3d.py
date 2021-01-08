@@ -44,7 +44,7 @@ def get_cameras(left_xml, right_xml):
     # --------------------------------------------------------------------------
 
     # RECTIFICATION ------------------------------------------------------------
-    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=0,
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=1,
     imageSize=(image_size.width, image_size.height), newImageSize=(image_size.width, image_size.height))
 
     map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (image_size.width, image_size.height), cv.CV_32FC1)
@@ -77,7 +77,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # FORMATAGE PRE-CALCUL -----------------------------------------------------
     # DOWNSCALE
-    downscale=2
+    downscale=1
     new_num_disp = int(num_disp / downscale)
     n_width = int(rectifiedL.shape[1] * 1/downscale)
     n_height = int(rectifiedR.shape[0] * 1/downscale)
@@ -89,8 +89,8 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
     grayR_down = cv.cvtColor(downR,cv.COLOR_BGR2GRAY)
 
     # SMOOTH
-    grayL_down = cv.medianBlur(grayL_down,3)
-    grayR_down = cv.medianBlur(grayR_down,3)
+    # grayL_down = cv.medianBlur(grayL_down,3)
+    # grayR_down = cv.medianBlur(grayR_down,3)
     # --------------------------------------------------------------------------
 
     # CALCULS DISPARITÉ --------------------------------------------------------
@@ -120,7 +120,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
     # --------------------------------------------------------------------------
 
     # BILATERAL FILTER ---------------------------------------------------------
-    fbs_spatial=18.0
+    fbs_spatial=8.0
     fbs_luma=8.0
     fbs_chroma=8.0
     fbs_lambda=128.0
@@ -147,8 +147,9 @@ def save_mesh(rectified, points, mask, mesh_name):
     colors = cv.cvtColor(rectified, cv.COLOR_BGR2RGB)
     colors_valides = colors[mask.astype(bool)]
     points_valides=points[mask.astype(bool)]
+    mask2 = points_valides[:,2]<5
     out_fn = '3dpoints/{}.ply'.format(mesh_name)
-    write_ply(out_fn, points_valides, colors_valides)
+    write_ply(out_fn, points_valides[mask2], colors_valides[mask2])
     # --------------------------------------------------------------------------
 
 
@@ -208,7 +209,7 @@ def coins_mesh(patternSize,rectified, points):
     for i in range(len(corners_rec)):
         col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
         # Moyenne :
-        n=10
+        n=5
         pts = points[row-n:row+n, col-n:col+n, :]
         xmean=pts[:,:,0].mean()
         ymean=pts[:,:,1].mean()
@@ -231,7 +232,7 @@ def get_rec(objp, r, t, R, P ):
     return rec
 
 
-def err_points(patternSize, pts_th, pts_cal):
+def err_points(patternSize, pts_th, pts_cal, outliersmax=None):
     """
     Calcule l'erreur entre les points théoriques pts_th et les points calculés pts_cal. Les points sont les coins d'un damier.
     Args:
@@ -246,36 +247,50 @@ def err_points(patternSize, pts_th, pts_cal):
                                  -en coordonées cyclindriques r,theta,z-
     """
 
-    arr=np.zeros((patternSize[1],patternSize[0]))
-    x,y,z=arr.copy(), arr.copy(), arr.copy()
-    xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
-    j=0;n=patternSize[0]
-    for i in range(patternSize[1]):
-        x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
-        xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
-        j+=n
+    # arr=np.zeros((patternSize[1],patternSize[0]))
+    # x,y,z=arr.copy(), arr.copy(), arr.copy()
+    # xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
+    # j=0;n=patternSize[0]
+    # for i in range(patternSize[1]):
+    #     x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
+    #     xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
+    #     j+=n
+    x,y,z = pts_cal[0,:], pts_cal[1,:], pts_cal[2,:]
+    xo,yo,zo = pts_th[0,:], pts_th[1,:], pts_th[2,:]
 
     # Erreur en coordonées cartésiennes:
     errX=xo-x; errY=yo-y; errZ=zo-z
-    errx = np.sqrt((errX**2).mean())
-    erry = np.sqrt((errY**2).mean())
-    errz = np.sqrt((errZ**2).mean())
-
-    # Erreur totale
-    errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
-
     # Erreur en coordonées cylindriques, r=x^2+y^2, theta=tan(y/x)
     rayono = np.sqrt( xo**2 + yo**2  )
     rayon = np.sqrt( x**2 + y**2  )
     err_r = rayono-rayon
-    err_rayon = np.sqrt((err_r**2).mean())
 
-    thetao = np.arctan(yo/xo)
+    arr=yo/xo; arr[np.isnan(arr)]=np.inf
+    thetao = np.arctan(arr)
     theta = np.arctan(y/x)
     err_t = (thetao-theta)
-    err_theta = np.sqrt( (err_t[~np.isnan(err_t)]**2).mean() )
 
-    return errtot, (errx, erry, errz), (err_rayon, err_theta)
+    if outliersmax:
+        B=np.absolute(errZ)<outliersmax
+        errX = errX[B]
+        errY = errY[B]
+        errZ = errZ[B]
+        err_r = err_r[B]
+        err_t = err_t[B]
+
+    # Erreurs RMS
+    errx = np.sqrt((errX**2).mean())
+    erry = np.sqrt((errY**2).mean())
+    errz = np.sqrt((errZ**2).mean())
+    errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
+    err_rayon = np.sqrt( (err_r**2).mean() )
+    err_theta = np.sqrt( (err_t**2).mean() )
+
+
+
+
+
+    return errtot, (errx, erry, errz), (err_rayon, err_theta), (zo, np.absolute(errZ), rayono, np.absolute(err_r), thetao, err_t)
 
 
 

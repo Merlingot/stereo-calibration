@@ -3,8 +3,8 @@ from modules.points3d import *
 
 
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures/captures_calibration/left10.jpg'
-fright = 'captures/captures_calibration/right10.jpg'
+fleft = 'captures/captures_zorro/left2.jpg'
+fright = 'captures/captures_zorro/right2.jpg'
 # ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
@@ -104,9 +104,26 @@ cloud = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 # depth map
 depth_map=cloud[:,:,2]*mask
 
-# plt.imshow(disparity)
-# plt.colorbar()
-
-plt.imshow(depth_map)
+plt.figure()
+plt.imshow(disparity)
+plt.title('carte de disparité')
 plt.colorbar()
+plt.savefig('carte_d_zz.png')
+
+plt.figure()
+plt.imshow(depth_map)
+plt.title('carte de profondeur')
+plt.colorbar()
+plt.savefig('carte_p_zz.png')
 # -------------------------------------------------------------------------
+
+
+
+# SAVEGARDER MESH ----------------------------------------------------------
+# colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
+# colors_valides = colors[mask.astype(bool)]
+# points_valides=cloud[mask.astype(bool)]
+# mask2 = (points_valides[:,2]<2).astype(bool)
+# out_fn = '3dpoints/{}.ply'.format('dents')
+# write_ply(out_fn, points_valides[mask2], colors_valides[mask2])
+# --------------------------------------------------------------------------

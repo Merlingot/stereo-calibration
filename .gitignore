@@ -10,6 +10,7 @@ __pycache__/
 *.ply
 *.conf
 *.xml
+*.png
 
 #Images
 *.png
