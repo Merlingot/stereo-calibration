@@ -3,8 +3,8 @@ from modules.points3d import *
 
 
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures/captures_zorro/left2.jpg'
-fright = 'captures/captures_zorro/right2.jpg'
+fleft = 'captures/captures_calibration/left2.jpg'
+fright = 'captures/captures_calibration/right2.jpg'
 # ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
@@ -76,23 +76,23 @@ filtered_disp = wls_filter.filter(displ, rectifiedL, None, dispr)
 # --------------------------------------------------------------------------
 
 # # MASK ---------------------------------------------------------------------
-# # CONFIDENCE MAP
+# CONFIDENCE MAP
 conf_map=wls_filter.getConfidenceMap()
-# # ROI
+# ROI
 ROI = np.array(wls_filter.getROI())*downscale
-# #MASK
+#MASK
 mask=np.zeros(conf_map.shape, conf_map.dtype)
 mask[ROI[1]:ROI[1]+ROI[3], ROI[0]:ROI[0]+ROI[2]]=1
-# # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
-#
-# # # BILATERAL FILTER ---------------------------------------------------------
+
+# BILATERAL FILTER ---------------------------------------------------------
 fbs_spatial=30.0
 fbs_luma=8.0
 fbs_chroma=8.0
 fbs_lambda=128.0
 solved_filtered_disp = cv.ximgproc.fastBilateralSolverFilter(rectifiedL, filtered_disp, conf_map/255.0, None, fbs_spatial, fbs_luma, fbs_chroma, fbs_lambda)
-# # # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 # REPROJECT TO 3D ----------------------------------------------------------
 # format disparity
@@ -103,21 +103,7 @@ cloud = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 
 # depth map
 depth_map=cloud[:,:,2]*mask
-
-plt.figure()
-plt.imshow(disparity)
-plt.title('carte de disparité')
-plt.colorbar()
-plt.savefig('carte_d_zz.png')
-
-plt.figure()
-plt.imshow(depth_map)
-plt.title('carte de profondeur')
-plt.colorbar()
-plt.savefig('carte_p_zz.png')
-# -------------------------------------------------------------------------
-
-
+# --------------------------------------------------------------------------
 
 # SAVEGARDER MESH ----------------------------------------------------------
 # colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
