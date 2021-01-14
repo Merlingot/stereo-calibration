@@ -1,10 +1,3 @@
-import numpy as np
-import cv2
-import configparser
-import math
-import argparse
-
-
 
 ##############################################################################
 class Resolution :
@@ -20,5 +13,8 @@ def get_image_dimension_from_resolution(resolution):
     if resolution== 'VGA' :
         width=800
         height=480
+    if resolution== 'HD' :
+        width=720
+        height=1080
     return width,height
 ##############################################################################

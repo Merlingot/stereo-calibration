@@ -3,16 +3,16 @@ from modules.points3d import *
 
 
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures/captures_calibration/left2.jpg'
-fright = 'captures/captures_calibration/right2.jpg'
+fleft = 'captures_zed/captures_test_distances2/left1.jpg'
+fright = 'captures_zed/captures_test_distances2/right1.jpg'
 # ------------------------------------------------------------------------------
 
 # Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
 # Damier -----------------------------------------------------------------------
-patternSize=(10,8)
-squaresize=2e-2
+patternSize=(15,10)
+squaresize=7e-2
 # ------------------------------------------------------------------------------
 
 

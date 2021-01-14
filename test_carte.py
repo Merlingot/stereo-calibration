@@ -110,6 +110,6 @@ depth_map=cloud[:,:,2]*mask
 # colors_valides = colors[mask.astype(bool)]
 # points_valides=cloud[mask.astype(bool)]
 # mask2 = (points_valides[:,2]<2).astype(bool)
-# out_fn = '3dpoints/{}.ply'.format('dents')
+# out_fn = '3dpoints/{}.ply'.format('test')
 # write_ply(out_fn, points_valides[mask2], colors_valides[mask2])
 # --------------------------------------------------------------------------
