@@ -193,6 +193,7 @@ class StereoCalibration():
 
         # faire calibration individuelle avant
         if self.err1==None or self.err2==None:
+            print('calibration individuelle')
             self.calibrateSingle(single_path, single_detected_path, fisheye)
 
         # deux sets ou un set
@@ -206,30 +207,40 @@ class StereoCalibration():
         else:
             flags += self.not_fisheye_flags
 
+        print('calibration stéréo')
         # calibration stereo
         objpoints, imgpoints_l, imgpoints_r = self.__read_stereo()
 
-        self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.stereo_per_view_err= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+        self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+        print(len(self.perViewErrors))
 
         # Enlever les outliers et recalibrer:
-        indices=np.indices(self.stereo_per_view_err.shape)[0]
-        indexes=indices[self.stereo_per_view_err<self.errStereo*1]
+        indices=np.indices(self.perViewErrors.shape)[0]
+        b=self.perViewErrors<self.errStereo*1
+        B=b[:,0]*b[:,1]
+        indexes=indices[B]
         if len(indexes)>0:
             objpoints=np.array(objpoints)[indexes]
             imgpoints_l=np.array(imgpoints_l)[indexes]
             imgpoints_r=np.array(imgpoints_r)[indexes]
             # re-calculs
-            self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.stereo_per_view_err= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+            self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+            print(len(self.perViewErrors))
 
             # Enlever les outliers et recalibrer deuxième fois:
-            indices=np.indices(self.stereo_per_view_err.shape)[0]
-            indexes=indices[self.stereo_per_view_err<self.errStereo*1]
+            indices=np.indices(self.perViewErrors.shape)[0]
+            b=self.perViewErrors<self.errStereo*1
+            B=b[:,0]*b[:,1]
+            indexes=indices[B]
+
             if len(indexes)>0:
+                self.perViewErrors = None
                 objpoints=np.array(objpoints)[indexes]
                 imgpoints_l=np.array(imgpoints_l)[indexes]
                 imgpoints_r=np.array(imgpoints_r)[indexes]
                 # re-calculs
-                self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.stereo_per_view_err= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+                self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+                print(len(self.perViewErrors))
 
         # Print erreur de reprojection
         print('Erreur de reprojection RMS calibration stereo')
