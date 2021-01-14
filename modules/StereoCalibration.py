@@ -19,21 +19,22 @@ class StereoCalibration():
         self.patternSize=patternSize
         self.squaresize=squaresize #utiliser des unités SI svp
         self.objp = coins_damier(patternSize,squaresize)
-
         self.color_flag=cv.COLOR_RGB2GRAY
 
-        # Critères
+        # Critères ------------------------------------------------------------
         self.criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
         self.criteria_cal = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
+        # ----------------------------------------------------------------------
 
-        # Flags de claibration
-        self.not_fisheye_flags = cv.CALIB_FIX_K3|cv.CALIB_ZERO_TANGENT_DIST
-        # self.not_fisheye_flags=0
+        # Flags de claibration -------------------------------------------------
+        self.not_fisheye_flags = 0
+        # self.not_fisheye_flags = cv.CALIB_FIX_K3|cv.CALIB_ZERO_TANGENT_DIST
+
         self.fisheye_flags=cv.CALIB_RATIONAL_MODEL|cv.CALIB_FIX_K5|cv.CALIB_FIX_K6|cv.CALIB_ZERO_TANGENT_DIST
+        # ----------------------------------------------------------------------
 
 
         # Déclaration des attributs --------------------------------------------
-
         # Folders contenant les images à analyser
         self.single_path=None
         self.stereo_path=None
@@ -135,38 +136,39 @@ class StereoCalibration():
         self.objpoints_r, self.imgpoints_r, self.imageSize2 = self.__read_single('right')
 
         if fisheye==True:
-            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=self.fisheye_flags)
-
-            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=self.fisheye_flags)
-
+            flags=self.fisheye_flags
         else:
+            flags=self.not_fisheye_flags
 
-            # GAUCHE
-            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=self.not_fisheye_flags)
-
-            # Enlever les outliers et recalibrer:
-            objpoints_l=np.array(self.objpoints_l.copy())
-            imgpoints_l=np.array(self.imgpoints_l.copy())
-            indices=np.indices(self.perViewErrors1.shape)[0]
-            self.indexes_l=indices[self.perViewErrors1<self.err1*1.5]
-            if len(self.indexes_l)>0:
-                objpoints_l=objpoints_l[self.indexes_l]
-                imgpoints_l=imgpoints_l[self.indexes_l]
-                self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(objpoints_l, imgpoints_l, self.imageSize1, None, None, flags=self.not_fisheye_flags)
+        # GAUCHE
+        self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=flags)
 
 
-            # DROITE
-            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=self.not_fisheye_flags)
+        # DROITE
+        self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=flags)
 
-            # Enlever les outliers et recalibrer:
-            objpoints_r=np.array(self.objpoints_r.copy())
-            imgpoints_r=np.array(self.imgpoints_r.copy())
-            indices=np.indices(self.perViewErrors2.shape)[0]
-            self.indexes_r=indices[self.perViewErrors2<self.err2*1.5]
-            if len(self.indexes_r)>0:
-                objpoints_r=objpoints_r[self.indexes_r]
-                imgpoints_r=imgpoints_r[self.indexes_r]
-                self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(objpoints_r, imgpoints_r, self.imageSize2, None, None, flags=self.not_fisheye_flags)
+        # Enlever les outliers -------------------------------------------------
+
+        # gauche
+        objpoints_l=np.array(self.objpoints_l.copy())
+        imgpoints_l=np.array(self.imgpoints_l.copy())
+        indices=np.indices(self.perViewErrors1.shape)[0]
+        self.indexes_l=indices[self.perViewErrors1<self.err1*1.5]
+        if len(self.indexes_l)>0:
+            objpoints_l=objpoints_l[self.indexes_l]
+            imgpoints_l=imgpoints_l[self.indexes_l]
+            self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(objpoints_l, imgpoints_l, self.imageSize1, None, None, flags=flags)
+
+        # droite
+        objpoints_r=np.array(self.objpoints_r.copy())
+        imgpoints_r=np.array(self.imgpoints_r.copy())
+        indices=np.indices(self.perViewErrors2.shape)[0]
+        self.indexes_r=indices[self.perViewErrors2<self.err2*1.5]
+        if len(self.indexes_r)>0:
+            objpoints_r=objpoints_r[self.indexes_r]
+            imgpoints_r=imgpoints_r[self.indexes_r]
+            self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(objpoints_r, imgpoints_r, self.imageSize2, None, None, flags=flags)
+        # ----------------------------------------------------------------------
 
         # Print erreur de reprojection
         print('Erreur de reprojection RMS calibration individuelle')
@@ -214,11 +216,12 @@ class StereoCalibration():
         self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
         print(len(self.perViewErrors))
 
-        # Enlever les outliers et recalibrer:
+        # Enlever les outliers -------------------------------------------------
+
         indices=np.indices(self.perViewErrors.shape)[0]
-        b=self.perViewErrors<self.errStereo*1
+        b=self.perViewErrors<self.errStereo*1.5
         B=b[:,0]*b[:,1]
-        indexes=indices[B]
+        indexes=indices[B][:,0]
         if len(indexes)>0:
             objpoints=np.array(objpoints)[indexes]
             imgpoints_l=np.array(imgpoints_l)[indexes]
@@ -227,20 +230,21 @@ class StereoCalibration():
             self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
             print(len(self.perViewErrors))
 
-            # Enlever les outliers et recalibrer deuxième fois:
-            indices=np.indices(self.perViewErrors.shape)[0]
-            b=self.perViewErrors<self.errStereo*1
-            B=b[:,0]*b[:,1]
-            indexes=indices[B]
-
-            if len(indexes)>0:
-                self.perViewErrors = None
-                objpoints=np.array(objpoints)[indexes]
-                imgpoints_l=np.array(imgpoints_l)[indexes]
-                imgpoints_r=np.array(imgpoints_r)[indexes]
-                # re-calculs
-                self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
-                print(len(self.perViewErrors))
+            # # Enlever les outliers et recalibrer deuxième fois:
+            # indices=np.indices(self.perViewErrors.shape)[0]
+            # b=self.perViewErrors<self.errStereo*1
+            # B=b[:,0]*b[:,1]
+            # indexes=indices[B][:,0]
+            #
+            # if len(indexes)>0:
+            #     self.perViewErrors = None
+            #     objpoints=np.array(objpoints)[indexes]
+            #     imgpoints_l=np.array(imgpoints_l)[indexes]
+            #     imgpoints_r=np.array(imgpoints_r)[indexes]
+            #     # re-calculs
+            #     self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+            #     print(len(self.perViewErrors))
+        # ----------------------------------------------------------------------
 
         # Print erreur de reprojection
         print('Erreur de reprojection RMS calibration stereo')
