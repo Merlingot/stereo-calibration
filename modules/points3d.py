@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob, os
 
-from modules.stereo_tools import get_image_dimension_from_resolution, Resolution
+
 from modules.util import *
 
 
@@ -30,25 +30,24 @@ class Camera():
 
 
 
-def get_cameras(left_xml, right_xml):
+def get_cameras(left_xml, right_xml, alpha=1):
 
-    # RESOLUTION ET TAILLE -----------------------------------------------------
-    resolution='VGA'
-    width,height = get_image_dimension_from_resolution(resolution)
-    image_size = Resolution(width,height)
-    # --------------------------------------------------------------------------
+
 
     # LIRE FICHIERS DE CALIBRATION ---------------------------------------------
-    K1,d1, _, _ ,_, _, _ = readXML(left_xml) # left
+    K1,d1, _, _ ,imageSize, _, _ = readXML(left_xml) # left
     K2,d2, R, T ,_, _, _ = readXML(right_xml) # right
     # --------------------------------------------------------------------------
 
-    # RECTIFICATION ------------------------------------------------------------
-    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=1,
-    imageSize=(image_size.width, image_size.height), newImageSize=(image_size.width, image_size.height))
+    # RESOLUTION ET TAILLE -----------------------------------------------------
+    height, width = imageSize[0], imageSize[1]
+    # --------------------------------------------------------------------------
 
-    map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (image_size.width, image_size.height), cv.CV_32FC1)
-    map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (image_size.width, image_size.height), cv.CV_32FC1)
+    # RECTIFICATION ------------------------------------------------------------
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=alpha, imageSize=(width, height), newImageSize=(width,height))
+
+    map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (width, height), cv.CV_32FC1)
+    map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (width, height), cv.CV_32FC1)
     # --------------------------------------------------------------------------
 
     # CAMÉRAS ------------------------------------------------------------------
@@ -211,10 +210,10 @@ def coins_mesh(patternSize,rectified, points):
         # Moyenne :
         n=5
         pts = points[row-n:row+n, col-n:col+n, :]
-        xmean=pts[:,:,0].mean()
-        ymean=pts[:,:,1].mean()
-        zmean=pts[:,:,2].mean()
-        pt=np.array([xmean, ymean, zmean])
+        xmed=np.median(pts[:,:,0])
+        ymed=np.median(pts[:,:,1])
+        zmed=np.median(pts[:,:,2])
+        pt=np.array([xmed, ymed, zmed])
         # pt = points[row,col]
         pts_rec.append(pt)
     pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
