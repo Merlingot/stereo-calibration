@@ -102,9 +102,9 @@ class StereoCalibration():
             if ret_l*ret_r==1:
                 objpoints.append(self.objp)
 
-                corners2_l= cv.cornerSubPix(gray_l, corners_l, (11, 11),(-1, -1), self.criteria)
+                corners2_l= cv.cornerSubPix(gray_l, corners_l, (11, 11),(-1, -1), self.criteria_cal)
                 imgpoints_left.append(corners2_l)
-                corners2_r= cv.cornerSubPix(gray_r, corners_r, (11, 11),(-1, -1), self.criteria)
+                corners2_r= cv.cornerSubPix(gray_r, corners_r, (11, 11),(-1, -1), self.criteria_cal)
                 imgpoints_right.append(corners2_r)
 
                 # Dessiner les chessboard -------------------------------------
@@ -143,7 +143,6 @@ class StereoCalibration():
         # GAUCHE
         self.err1, self.M1, self.d1, self.r1, self.t1, stdDeviationsIntrinsics1, stdDeviationsExtrinsics1, self.perViewErrors1 = cv.calibrateCameraExtended(self.objpoints_l, self.imgpoints_l, self.imageSize1, None, None, flags=flags)
 
-
         # DROITE
         self.err2, self.M2, self.d2, self.r2, self.t2, stdDeviationsIntrinsics2, stdDeviationsExtrinsics2, self.perViewErrors2 = cv.calibrateCameraExtended(self.objpoints_r, self.imgpoints_r, self.imageSize2, None, None, flags=flags)
 
@@ -153,7 +152,7 @@ class StereoCalibration():
         objpoints_l=np.array(self.objpoints_l.copy())
         imgpoints_l=np.array(self.imgpoints_l.copy())
         indices=np.indices(self.perViewErrors1.shape)[0]
-        self.indexes_l=indices[self.perViewErrors1<self.err1*1.5]
+        self.indexes_l=indices[self.perViewErrors1<self.err1*1]
         if len(self.indexes_l)>0:
             objpoints_l=objpoints_l[self.indexes_l]
             imgpoints_l=imgpoints_l[self.indexes_l]
@@ -163,7 +162,7 @@ class StereoCalibration():
         objpoints_r=np.array(self.objpoints_r.copy())
         imgpoints_r=np.array(self.imgpoints_r.copy())
         indices=np.indices(self.perViewErrors2.shape)[0]
-        self.indexes_r=indices[self.perViewErrors2<self.err2*1.5]
+        self.indexes_r=indices[self.perViewErrors2<self.err2*1]
         if len(self.indexes_r)>0:
             objpoints_r=objpoints_r[self.indexes_r]
             imgpoints_r=imgpoints_r[self.indexes_r]
@@ -175,7 +174,7 @@ class StereoCalibration():
         print(self.err1, self.err2)
 
 
-    def calibrateStereo(self, stereo_path, stereo_detected_path, single_detected_path, fisheye=False, calib_2_sets=False, single_path=None):
+    def calibrateStereo(self, stereo_path, stereo_detected_path,fisheye=False):
         """
         ||Public method||
         Args:
@@ -189,37 +188,29 @@ class StereoCalibration():
         self.stereo_path=stereo_path
         self.stereo_detected_path=stereo_detected_path
         clean_folders([stereo_detected_path])
-        if not calib_2_sets:
-            single_path=stereo_path
+        flags=0
 
-
-        # faire calibration individuelle avant
-        if self.err1==None or self.err2==None:
-            print('calibration individuelle')
-            self.calibrateSingle(single_path, single_detected_path, fisheye)
-
-        # deux sets ou un set
-        if calib_2_sets:
-            flags = cv.CALIB_FIX_INTRINSIC
-        else:
-            flags = cv.CALIB_USE_INTRINSIC_GUESS
-        # caméra fisheye
         if fisheye:
             flags += self.fisheye_flags
         else:
             flags += self.not_fisheye_flags
 
+        if self.R is not None:
+            flags+= cv.CALIB_USE_EXTRINSIC_GUESS
+
+        flags+= cv.CALIB_USE_INTRINSIC_GUESS
+
         print('calibration stéréo')
         # calibration stereo
         objpoints, imgpoints_l, imgpoints_r = self.__read_stereo()
 
-        self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+        self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, self.R, self.T, flags=flags)
         print(len(self.perViewErrors))
 
         # Enlever les outliers -------------------------------------------------
 
         indices=np.indices(self.perViewErrors.shape)[0]
-        b=self.perViewErrors<self.errStereo*1.5
+        b=self.perViewErrors<self.errStereo*1
         B=b[:,0]*b[:,1]
         indexes=indices[B][:,0]
         if len(indexes)>0:
@@ -227,23 +218,8 @@ class StereoCalibration():
             imgpoints_l=np.array(imgpoints_l)[indexes]
             imgpoints_r=np.array(imgpoints_r)[indexes]
             # re-calculs
-            self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
+            self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors = cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, self.R, self.T, flags=flags)
             print(len(self.perViewErrors))
-
-            # # Enlever les outliers et recalibrer deuxième fois:
-            # indices=np.indices(self.perViewErrors.shape)[0]
-            # b=self.perViewErrors<self.errStereo*1
-            # B=b[:,0]*b[:,1]
-            # indexes=indices[B][:,0]
-            #
-            # if len(indexes)>0:
-            #     self.perViewErrors = None
-            #     objpoints=np.array(objpoints)[indexes]
-            #     imgpoints_l=np.array(imgpoints_l)[indexes]
-            #     imgpoints_r=np.array(imgpoints_r)[indexes]
-            #     # re-calculs
-            #     self.errStereo, _, _, _, _, self.R, self.T, self.E, self.F, self.perViewErrors= cv.stereoCalibrateExtended(objpoints, imgpoints_l, imgpoints_r, self.M1, self.d1, self.M2,self.d2, self.imageSize1, None, None, flags=flags)
-            #     print(len(self.perViewErrors))
         # ----------------------------------------------------------------------
 
         # Print erreur de reprojection
