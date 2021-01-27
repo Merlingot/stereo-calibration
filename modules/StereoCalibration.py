@@ -70,7 +70,7 @@ class StereoCalibration():
             ret, corners = cv.findChessboardCorners(gray, self.patternSize, None)
             if ret==True:
                 objpoints.append(self.objp)
-                corners2= cv.cornerSubPix(gray, corners, (11, 11),(-1, -1), self.criteria);
+                corners2= cv.cornerSubPix(gray, corners, (3, 3),(-1, -1), self.criteria);
                 imgpoints.append(corners2)
                 # Dessiner chessboard--
                 _ = cv.drawChessboardCorners(color, self.patternSize, corners2, True)
@@ -102,9 +102,9 @@ class StereoCalibration():
             if ret_l*ret_r==1:
                 objpoints.append(self.objp)
 
-                corners2_l= cv.cornerSubPix(gray_l, corners_l, (11, 11),(-1, -1), self.criteria_cal)
+                corners2_l= cv.cornerSubPix(gray_l, corners_l, (3, 3),(-1, -1), self.criteria_cal)
                 imgpoints_left.append(corners2_l)
-                corners2_r= cv.cornerSubPix(gray_r, corners_r, (11, 11),(-1, -1), self.criteria_cal)
+                corners2_r= cv.cornerSubPix(gray_r, corners_r, (3, 3),(-1, -1), self.criteria_cal)
                 imgpoints_right.append(corners2_r)
 
                 # Dessiner les chessboard -------------------------------------
@@ -174,7 +174,7 @@ class StereoCalibration():
         print(self.err1, self.err2)
 
 
-    def calibrateStereo(self, stereo_path, stereo_detected_path,fisheye=False):
+    def calibrateStereo(self, stereo_path, stereo_detected_path, fisheye=False, calib_2_sets=False):
         """
         ||Public method||
         Args:
@@ -198,7 +198,10 @@ class StereoCalibration():
         if self.R is not None:
             flags+= cv.CALIB_USE_EXTRINSIC_GUESS
 
-        flags+= cv.CALIB_USE_INTRINSIC_GUESS
+        if calib_2_sets:
+            flags+= cv.CALIB_FIX_INTRINSIC
+        else:
+            flags+= cv.CALIB_USE_INTRINSIC_GUESS
 
         print('calibration stéréo')
         # calibration stereo
@@ -227,11 +230,11 @@ class StereoCalibration():
         print(self.errStereo)
 
 
-    def saveResultsXML(self):
+    def saveResultsXML(self, left_name='cam1', right_name='cam2'):
 
         # Enregistrer caméra 1:
         s = cv.FileStorage()
-        s.open('cam1.xml', cv.FileStorage_WRITE)
+        s.open('{}.xml'.format(left_name), cv.FileStorage_WRITE)
         s.write('K', self.M1)
         s.write('R', np.eye(3))
         s.write('t', np.zeros((1,3)))
@@ -243,7 +246,7 @@ class StereoCalibration():
 
         # Enregistrer caméra 2:
         s = cv.FileStorage()
-        s.open('cam2.xml', cv.FileStorage_WRITE)
+        s.open('{}.xml'.format(right_name), cv.FileStorage_WRITE)
         s.write('K', self.M2)
         s.write('R', self.R)
         s.write('t', self.T)
@@ -253,13 +256,16 @@ class StereoCalibration():
         s.write('F', self.F)
         s.release()
 
-    def reprojection(self, folder):
+    def reprojection(self, folder, number=None):
         """ Dessiner la reprojection """
         clean_folders([folder])
 
         images_left = np.sort(glob.glob(self.single_path + 'left*.jpg'))
         images_right = np.sort(glob.glob(self.single_path + 'right*.jpg'))
         assert (len(images_right) != 0 or len(images_left) != 0  ), "Images pas trouvées. Vérifier le path"
+        if number is not None:
+            images_left = images_left[:number]
+            images_right = images_right[:number]
 
         index=0
         for i in range(len(images_left)):

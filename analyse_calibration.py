@@ -3,47 +3,41 @@ from modules.points3d import *
 from modules.util import *
 
 ################################################################################
-# Fichiers de calibration ------------------------------------------------------
-left_xml='cam1_zed.xml'
-right_xml='cam2_zed.xml'
 # Damier -----------------------------------------------------------------------
 patternSize=(15,10)
 squaresize=7e-2
+objp = coins_damier(patternSize,squaresize)
+world = objp.T
 # Images -----------------------------------------------------------------------
-left=np.concatenate( (np.sort(glob.glob("captures_zed/captures_3/left*.jpg"))[0:15] , np.sort(glob.glob("captures_zed/captures_2/left*.jpg"))[6:14]))
+left=np.concatenate( (np.sort(glob.glob("captures_zed/captures_3/left*.jpg")) , np.sort(glob.glob("captures_zed/captures_2/left*.jpg"))[0:20]))
 left
-right=np.concatenate( (np.sort(glob.glob("captures_zed/captures_3/right*.jpg"))[0:15] , np.sort(glob.glob("captures_zed/captures_2/right*.jpg"))[6:14]))
+right=np.concatenate( (np.sort(glob.glob("captures_zed/captures_3/right*.jpg")) , np.sort(glob.glob("captures_zed/captures_2/right*.jpg"))[0:20]))
 ################################################################################
 
 # Déclaration des listes d'erreur ----------------------------------------------
 N=[]
 errtot1 = []; errtot2 = []
-# errxyz1 = []; errxyz2 = []
-# errcyl1 = []; errcyl2 = []
 Z=[];z1=[];z2=[]
 X=[];x1=[];x2=[]
 Y=[];y1=[];y2=[]
-images=[]
-# Damier et caméras ------------------------------------------------------------
-objp = coins_damier(patternSize,squaresize)
-world = objp.T
+# Caméras ----------------------------------------------------------------------
+left_xml='cam1_zed.xml'
+right_xml='cam2_zed.xml'
 cam1, cam2 = get_cameras(left_xml, right_xml, alpha=0)
 # ------------------------------------------------------------------------------
 
 for nb in range(len(left)):
 
-    N.append(nb)
     # Images à reconstruire:
     cam1.set_images(left[nb])
     cam2.set_images(right[nb])
-    images.append(cam1.rectified)
-
     # CALCUL AVEC CARTE DE DISPARITÉ  ------------------------------------------
     cloud, mask, depth_map= calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q)
     # save_mesh(cam1.rectified, cloud, mask, 'mesh_{}'.format(nb))
     pts_rec, corners_rec = coins_mesh(patternSize, cam1.rectified, cloud, winSize=(3,3)) # Points détectés
 
     if pts_rec is not None:
+        N.append(nb)
         ret, r, t = find_rt(patternSize, objp, cam1.not_rectified, cam1.K, cam1.D, winSize=(3,3))
         rec = get_rec(objp, r, t, cam1.R, cam1.P ) # Points théoriques
 
@@ -56,16 +50,6 @@ for nb in range(len(left)):
         y1.append((y))
         Z.append((z0))
         z1.append((z))
-    # --------------------------------------------------------------------------
-
-    # # CALCUL AVEC TRIANGULATION  ----------------------------------------------
-    # re = triangulation_rec(patternSize, cam1.rectified, cam2.rectified, cam1.P, cam2.P ) # Points détectés
-    # errtot, errxyz, errcyl, vecerr = err_points(patternSize, rec, re)
-    # errtot2.append(errtot)
-    # _, x, _, y, _, z = vecerr
-    # x2.append((x))
-    # y2.append((y))
-    # z2.append((z))
     # --------------------------------------------------------------------------
 
 errz = []
@@ -82,53 +66,42 @@ Zmean=np.array(Zmean)
 errz=np.array(errz)
 a=np.argsort(Zmean)
 
-# plt.plot(Zmean[a][errz[a]<1], errz[a][errz[a]<1], 'r.-')
-
-# Fichiers de calibration ------------------------------------------------------
+################################################################################
+# Caméras ----------------------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
-# ------------------------------------------------------------------------------
-# Damier et caméras ------------------------------------------------------------
 cam1, cam2 = get_cameras(left_xml, right_xml, alpha=0)
 # ------------------------------------------------------------------------------
 # Déclaration des listes d'erreur ----------------------------------------------
-N=[]
 errtot1 = []; errtot2 = []
-errxyz1 = []; errxyz2 = []
-errcyl1 = []; errcyl2 = []
 Z=[];z1=[];z2=[]
 X=[];x1=[];x2=[]
 Y=[];y1=[];y2=[]
-images=[]
-
-
+NN=[]
 for nb in range(len(left)):
-
-    N.append(nb)
     # Images à reconstruire:
     cam1.set_images(left[nb])
     cam2.set_images(right[nb])
-    images.append(cam1.rectified)
 
     # CALCUL AVEC CARTE DE DISPARITÉ  ------------------------------------------
+    NN.append(nb)
     cloud, mask, depth_map= calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q)
     # save_mesh(cam1.rectified, cloud, mask, 'mesh_{}'.format(nb))
     pts_rec, corners_rec = coins_mesh(patternSize, cam1.rectified, cloud) # Points détectés
-    ret, r, t = find_rt(patternSize, objp, cam1.not_rectified, cam1.K, cam1.D)
-    rec = get_rec(objp, r, t, cam1.R, cam1.P ) # Points théoriques
-    errtot, errxyz, errcyl, vecerr = err_points(patternSize, rec, pts_rec)
-    errtot1.append(errtot)
-    errxyz1.append(errxyz)
-    errcyl1.append(errcyl)
-    x0, x, y0, y, z0, z = vecerr
-    X.append((x0))
-    x1.append((x))
-    Y.append((y0))
-    y1.append((y))
-    Z.append((z0))
-    z1.append((z))
-
-
+    if pts_rec is not None:
+        ret, r, t = find_rt(patternSize, objp, cam1.not_rectified, cam1.K, cam1.D)
+        rec = get_rec(objp, r, t, cam1.R, cam1.P ) # Points théoriques
+        errtot, errxyz, errcyl, vecerr = err_points(patternSize, rec, pts_rec)
+        errtot1.append(errtot)
+        errxyz1.append(errxyz)
+        errcyl1.append(errcyl)
+        x0, x, y0, y, z0, z = vecerr
+        X.append((x0))
+        x1.append((x))
+        Y.append((y0))
+        y1.append((y))
+        Z.append((z0))
+        z1.append((z))
 
 errz_ = []
 Zmean_=[]

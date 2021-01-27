@@ -22,7 +22,7 @@ class Camera():
     def set_images(self, fname):
         # LIRE IMAGES ORIGINALES -----------------------------------------------
         self.not_rectified=cv.imread(fname)
-        # assert self.not_rectified!=None, 'cv.imread failed'
+        assert self.not_rectified is not None, 'Image non lue. Vérifier path'
         # ----------------------------------------------------------------------
         # RECTIFICATION --------------------------------------------------------
         self.rectified = cv.remap(self.not_rectified, self.map_x, self.map_y, interpolation=cv.INTER_LINEAR)
@@ -30,9 +30,7 @@ class Camera():
 
 
 
-def get_cameras(left_xml, right_xml, alpha=1):
-
-
+def get_cameras(left_xml, right_xml, alpha=0):
 
     # LIRE FICHIERS DE CALIBRATION ---------------------------------------------
     K1,d1, _, _ ,imageSize, _, _ = readXML(left_xml) # left
@@ -44,7 +42,7 @@ def get_cameras(left_xml, right_xml, alpha=1):
     # --------------------------------------------------------------------------
 
     # RECTIFICATION ------------------------------------------------------------
-    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=alpha, imageSize=(width, height), newImageSize=(width,height))
+    R1, R2, P1, P2, Q, _, _ = cv.stereoRectify(cameraMatrix1=K1, cameraMatrix2=K2,distCoeffs1=d1,distCoeffs2=d2,R=R, T=T, flags=cv.CALIB_ZERO_DISPARITY, alpha=alpha, imageSize=(width,height), newImageSize=(width,height))
 
     map_left_x, map_left_y = cv.initUndistortRectifyMap(K1, d1, R1, P1, (width, height), cv.CV_32FC1)
     map_right_x, map_right_y = cv.initUndistortRectifyMap(K2, d2, R2, P2, (width, height), cv.CV_32FC1)
@@ -146,13 +144,13 @@ def save_mesh(rectified, points, mask, mesh_name):
     colors = cv.cvtColor(rectified, cv.COLOR_BGR2RGB)
     colors_valides = colors[mask.astype(bool)]
     points_valides=points[mask.astype(bool)]
-    mask2 = points_valides[:,2]<5
-    out_fn = '3dpoints/{}.ply'.format(mesh_name)
+    mask2 = points_valides[:,2]<30
+    out_fn = '{}.ply'.format(mesh_name)
     write_ply(out_fn, points_valides[mask2], colors_valides[mask2])
     # --------------------------------------------------------------------------
 
 
-def find_rt(patternSize, objp, not_rectified, K, D):
+def find_rt(patternSize, objp, not_rectified, K, D, winSize=(11,11)):
     """
     Trouver la transformation (r,t) qui amène du référentiel de la caméra rectifiée (Xc,Yc,Zc)_rec au référentiel monde (Xw, Yw,Zw)
 
@@ -171,7 +169,7 @@ def find_rt(patternSize, objp, not_rectified, K, D):
     gray=cv.cvtColor(not_rectified, cv.COLOR_BGR2GRAY)
     ret, corners_unrec = cv.findChessboardCorners(gray, patternSize, None)
     if ret :
-        corners_unrec = cv.cornerSubPix(gray, corners_unrec, (11, 11),(-1, -1), criteria)
+        corners_unrec = cv.cornerSubPix(gray, corners_unrec, winSize,(-1, -1), criteria)
     assert ret==True, "coins non détectés"
     # --------------------------------------------------------------------------
 
@@ -183,7 +181,7 @@ def find_rt(patternSize, objp, not_rectified, K, D):
     return ret, r, t
 
 
-def coins_mesh(patternSize,rectified, points):
+def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
     """
     Arrange des vecteurs contenant les points théoriques et les points calculés à partir de la carte de disparité
     Args:
@@ -199,27 +197,29 @@ def coins_mesh(patternSize,rectified, points):
     gray=cv.cvtColor(rectified, cv.COLOR_BGR2GRAY)
     ret, corners_rec = cv.findChessboardCorners(gray, patternSize, None)
     if ret :
-        corners_rec = cv.cornerSubPix(gray, corners_rec, (11, 11),(-1, -1), criteria)
-    assert ret==True, "coins non détectés"
+        corners_rec = cv.cornerSubPix(gray, corners_rec, winSize,(-1, -1), criteria)
+    # assert ret==True, "coins non détectés"
     # --------------------------------------------------------------------------
 
-    # COINS DE LA CARTE DE PROFONDEUR ------------------------------------------
-    pts_rec=[]
-    for i in range(len(corners_rec)):
-        col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
-        # Moyenne :
-        n=5
-        pts = points[row-n:row+n, col-n:col+n, :]
-        xmed=np.median(pts[:,:,0])
-        ymed=np.median(pts[:,:,1])
-        zmed=np.median(pts[:,:,2])
-        pt=np.array([xmed, ymed, zmed])
-        # pt = points[row,col]
-        pts_rec.append(pt)
-    pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
-    # --------------------------------------------------------------------------
+        # COINS DE LA CARTE DE PROFONDEUR ------------------------------------------
+        pts_rec=[]
+        for i in range(len(corners_rec)):
+            col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
+            # Moyenne :
+            n=5
+            pts = points[row-n:row+n, col-n:col+n, :]
+            xmed=np.median(pts[:,:,0])
+            ymed=np.median(pts[:,:,1])
+            zmed=np.median(pts[:,:,2])
+            pt=np.array([xmed, ymed, zmed])
+            # pt = points[row,col]
+            pts_rec.append(pt)
+        pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
+        # --------------------------------------------------------------------------
+        return pts_rec, corners_rec
 
-    return pts_rec, corners_rec
+    else:
+        return None, None
 
 def get_rec(objp, r, t, R, P ):
     # COINS THÉORIQUES ---------------------------------------------------------
@@ -231,7 +231,7 @@ def get_rec(objp, r, t, R, P ):
     return rec
 
 
-def err_points(patternSize, pts_th, pts_cal, outliersmax=None):
+def err_points(patternSize, pts_th, pts_cal):
     """
     Calcule l'erreur entre les points théoriques pts_th et les points calculés pts_cal. Les points sont les coins d'un damier.
     Args:
@@ -246,36 +246,27 @@ def err_points(patternSize, pts_th, pts_cal, outliersmax=None):
                                  -en coordonées cyclindriques r,theta,z-
     """
 
-    # arr=np.zeros((patternSize[1],patternSize[0]))
-    # x,y,z=arr.copy(), arr.copy(), arr.copy()
-    # xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
-    # j=0;n=patternSize[0]
-    # for i in range(patternSize[1]):
-    #     x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
-    #     xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
-    #     j+=n
-    x,y,z = pts_cal[0,:], pts_cal[1,:], pts_cal[2,:]
-    xo,yo,zo = pts_th[0,:], pts_th[1,:], pts_th[2,:]
+    arr=np.zeros((patternSize[1],patternSize[0]))
+    x,y,z=arr.copy(), arr.copy(), arr.copy()
+    xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
+    j=0;n=patternSize[0]
+    for i in range(patternSize[1]):
+        x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
+        xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
+        j+=n
+    # x,y,z = pts_cal[0,:], pts_cal[1,:], pts_cal[2,:]
+    # xo,yo,zo = pts_th[0,:], pts_th[1,:], pts_th[2,:]
 
     # Erreur en coordonées cartésiennes:
     errX=xo-x; errY=yo-y; errZ=zo-z
-    # Erreur en coordonées cylindriques, r=x^2+y^2, theta=tan(y/x)
+    # Erreur en coordonées cylindriques, r=x^2+y^2
     rayono = np.sqrt( xo**2 + yo**2  )
     rayon = np.sqrt( x**2 + y**2  )
     err_r = rayono-rayon
 
-    arr=yo/xo; arr[np.isnan(arr)]=np.inf
-    thetao = np.arctan(arr)
-    theta = np.arctan(y/x)
+    thetao = np.arctan(xo/zo)*180/np.pi
+    theta = np.arctan(x/z)*180/np.pi
     err_t = (thetao-theta)
-
-    if outliersmax:
-        B=np.absolute(errZ)<outliersmax
-        errX = errX[B]
-        errY = errY[B]
-        errZ = errZ[B]
-        err_r = err_r[B]
-        err_t = err_t[B]
 
     # Erreurs RMS
     errx = np.sqrt((errX**2).mean())
@@ -285,15 +276,11 @@ def err_points(patternSize, pts_th, pts_cal, outliersmax=None):
     err_rayon = np.sqrt( (err_r**2).mean() )
     err_theta = np.sqrt( (err_t**2).mean() )
 
+    return errtot, (errx, erry, errz), (err_rayon, err_theta), (xo, x, yo, y, zo, z )
 
 
 
-
-    return errtot, (errx, erry, errz), (err_rayon, err_theta), (zo, np.absolute(errZ), rayono, np.absolute(err_r), thetao, err_t)
-
-
-
-def triangulation_rec(patternSize, rectifiedL, rectifiedR, P1, P2 ):
+def triangulation_rec(patternSize, rectifiedL, rectifiedR, P1, P2, winSize=(11,11) ):
 
 
     # POINTS IMAGES DÉTECTÉS (LA MESURE) ---------------------------------------
@@ -305,8 +292,8 @@ def triangulation_rec(patternSize, rectifiedL, rectifiedR, P1, P2 ):
     ret_l, corners_l = cv.findChessboardCorners(grayl, patternSize, None)
     ret_r, corners_r = cv.findChessboardCorners(grayr, patternSize, None)
     if ret_l*ret_r :
-        corners_rec_l= cv.cornerSubPix(grayl, corners_l, (11, 11),(-1, -1), criteria)
-        corners_rec_r= cv.cornerSubPix(grayr, corners_r, (11, 11),(-1, -1), criteria)
+        corners_rec_l= cv.cornerSubPix(grayl, corners_l, winSize,(-1, -1), criteria)
+        corners_rec_r= cv.cornerSubPix(grayr, corners_r, winSize,(-1, -1), criteria)
     # --------------------------------------------------------------------------
 
     # TRIANGULATION -----------------------------------------------------------
@@ -335,7 +322,7 @@ def triangulation_rec(patternSize, rectifiedL, rectifiedR, P1, P2 ):
 
 
 
-############################ ménage
+###############################################################################
 
 
 def triangulation_world(patternSize, squaresize, K1, K2, D1, D2, left, right):
@@ -389,7 +376,7 @@ def triangulation_world(patternSize, squaresize, K1, K2, D1, D2, left, right):
 
 
 
-def err_rt(objp, not_rectified, rectified, K, D, R, P, r, t):
+def err_rt(objp, not_rectified, rectified, K, D, R, P, r, t ):
 
     # DÉTECTION DES COINS DANS L'IMAGE NON RECTIFIÉE ---------------------------
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -397,7 +384,7 @@ def err_rt(objp, not_rectified, rectified, K, D, R, P, r, t):
     gray=cv.cvtColor(not_rectified, cv.COLOR_BGR2GRAY)
     ret, corners_unrec = cv.findChessboardCorners(gray, patternSize, None)
     if ret :
-        corners_unrec = cv.cornerSubPix(gray, corners_unrec, (11, 11),(-1, -1), criteria)
+        corners_unrec = cv.cornerSubPix(gray, corners_unrec, (11,11),(-1, -1), criteria)
     assert ret==True, "coins non détectés"
     # --------------------------------------------------------------------------
 
@@ -407,7 +394,7 @@ def err_rt(objp, not_rectified, rectified, K, D, R, P, r, t):
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     ret, corners_rec = cv.findChessboardCorners(gray, patternSize, None)
     if ret:
-        corners_rec = cv.cornerSubPix(gray, corners_rec, (11, 11),(-1, -1), criteria)
+        corners_rec = cv.cornerSubPix(gray, corners_rec, (11,11),(-1, -1), criteria)
     assert ret==True, "coins non détectés"
     # --------------------------------------------------------------------------
 

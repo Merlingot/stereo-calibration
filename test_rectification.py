@@ -1,31 +1,32 @@
 from modules.util import *
 from modules.points3d import *
+import cv2 as cv
 
-
+################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures_zed/captures_test_distances2/left1.jpg'
-fright = 'captures_zed/captures_test_distances2/right1.jpg'
+fleft = 'captures_zed/captures_3/left001.jpg'
+fright = 'captures_zed/captures_3/right001.jpg'
 # ------------------------------------------------------------------------------
-
 # Fichiers de calibration ------------------------------------------------------
 left_xml='cam1.xml'
 right_xml='cam2.xml'
 # Damier -----------------------------------------------------------------------
 patternSize=(15,10)
-squaresize=7e-2
 # ------------------------------------------------------------------------------
+################################################################################
+
+
+
 
 
 _,_, _, _ ,_,E, F = readXML(left_xml) # left
-cam1,cam2=get_cameras(left_xml, right_xml)
+
+cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
 cam1.set_images(fleft)
 cam2.set_images(fright)
 
-world_th=coins_damier(patternSize,squaresize).T
-
 not_rectifiedL=cv.cvtColor(cam1.not_rectified, cv.COLOR_RGB2GRAY)
 not_rectifiedR=cv.cvtColor(cam2.not_rectified, cv.COLOR_RGB2GRAY)
-
 
 img1=not_rectifiedL; img2=not_rectifiedR
 ret, pts1=cv.findChessboardCorners(not_rectifiedL, patternSize, None)
@@ -50,7 +51,6 @@ plt.figure(figsize=(10,5))
 plt.title('Avant rectification')
 plt.imshow(np.concatenate((img5,img3), axis=1))
 plt.show()
-
 
 rectifiedL = cv.remap(img5, cam1.map_x, cam1.map_y, interpolation=cv.INTER_LINEAR)
 rectifiedR = cv.remap(img3, cam2.map_x, cam2.map_y, interpolation=cv.INTER_LINEAR)
