@@ -3,16 +3,35 @@ from modules.util import *
 import cv2 as cv
 
 # ================ PARAMETRES ========================
-patternSize=(10,8)
-squaresize=2e-2
-single_path='captures_nano/captures_calibration/'
-stereo_path='captures_nano/captures_calibration/'
+patternSize=(15,10)
+squaresize=7e-2
+single_path='captures_zed/tout/'
+stereo_path='captures_zed/tout/'
 single_detected_path='output/singles_detected/'
 stereo_detected_path='output/stereo_detected/'
 # ====================================================
 
 
+cibles=np.genfromtxt("captures_zed/objpts.txt").astype(np.float32)
+cibles_l=np.genfromtxt("captures_zed/pts_left.txt").astype(np.float32)
+cibles_l=cibles_l.reshape(cibles_l.shape[0], 1, 2)
+cibles_r=np.genfromtxt("captures_zed/pts_right.txt").astype(np.float32)
+cibles_r=cibles_r.reshape(cibles_r.shape[0], 1, 2)
+cibles=cibles[:cibles_r.shape[0], :]
+
+
 obj = StereoCalibration(patternSize, squaresize)
+obj.calibrateIntrinsics(single_path, single_detected_path, cibles=cibles, cibles_l=cibles_l, cibles_r=cibles_r, fisheye=False)
+obj.calibrateExtrinsics(stereo_path, stereo_detected_path, cibles=cibles, cibles_l=cibles_l, cibles_r=cibles_r, fisheye=False)
+obj.saveResultsXML(left_name='cam1_cibles', right_name='cam2_cibles')
+# obj.reprojection('output/reprojection/')
+
+
+
+
+
+
+
 # CAMÉRA GAUCHE
 # fx=528.915;fy=528.67
 # cx=618.42;cy=372.7495
@@ -39,7 +58,3 @@ obj = StereoCalibration(patternSize, squaresize)
 # TY=0.0288645e-3
 # TZ=-0.613716e-3
 # obj.T=np.array([TX, TY, TZ])
-obj.calibrateSingle(single_path, single_detected_path, fisheye=False)
-obj.calibrateStereo(stereo_path, stereo_detected_path, fisheye=False)
-obj.saveResultsXML(left_name='cam1_nano', right_name='cam2_nano')
-# obj.reprojection('output/reprojection/')

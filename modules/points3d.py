@@ -196,12 +196,11 @@ def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
     # Trouver coins dans l'image originale prise par la caméra
     gray=cv.cvtColor(rectified, cv.COLOR_BGR2GRAY)
     ret, corners_rec = cv.findChessboardCorners(gray, patternSize, None)
+    # assert ret==True, "coins non détectés"
+
     if ret :
         corners_rec = cv.cornerSubPix(gray, corners_rec, winSize,(-1, -1), criteria)
-    # assert ret==True, "coins non détectés"
-    # --------------------------------------------------------------------------
-
-        # COINS DE LA CARTE DE PROFONDEUR ------------------------------------------
+        # COINS DE LA CARTE DE PROFONDEUR --------------------------------------
         pts_rec=[]
         for i in range(len(corners_rec)):
             col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
@@ -215,11 +214,12 @@ def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
             # pt = points[row,col]
             pts_rec.append(pt)
         pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         return pts_rec, corners_rec
 
     else:
         return None, None
+    # --------------------------------------------------------------------------
 
 def get_rec(objp, r, t, R, P ):
     # COINS THÉORIQUES ---------------------------------------------------------
@@ -280,7 +280,7 @@ def err_points(patternSize, pts_th, pts_cal):
 
 
 
-def triangulation_rec(patternSize, rectifiedL, rectifiedR, P1, P2, winSize=(11,11) ):
+def triangulation_rec( patternSize, rectifiedL, rectifiedR, P1, P2, winSize=(11,11) ):
 
 
     # POINTS IMAGES DÉTECTÉS (LA MESURE) ---------------------------------------

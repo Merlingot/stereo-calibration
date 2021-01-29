@@ -85,8 +85,8 @@ a=np.argsort(Zmean)
 # plt.plot(Zmean[a][errz[a]<1], errz[a][errz[a]<1], 'r.-')
 
 # Fichiers de calibration ------------------------------------------------------
-left_xml='cam1.xml'
-right_xml='cam2.xml'
+left_xml='cam1_cibles.xml'
+right_xml='cam2_cibles.xml'
 # ------------------------------------------------------------------------------
 # Damier et caméras ------------------------------------------------------------
 cam1, cam2 = get_cameras(left_xml, right_xml, alpha=0)
@@ -145,13 +145,16 @@ for i in range(len(Z)):
 Zmean_=np.array(Zmean_)
 errz_=np.array(errz_)
 c=np.argsort(Zmean_)
+f=(errz[a])<2
+ff=(errz_[c])<2
+
 fig, ax = plt.subplots()
 ax.set_title('Erreur absolue en fonction de la distance z')
 ax.set_xlabel('z (m)')
 ax.set_ylabel('Erreur absolue (m)')
 # plt.ylim(0,2)
-plt.plot(Zmean[a], Zmean[a]-Zmean_[c], 'k.-')
-plt.plot(Zmean[a], errz[a], 'r.-')
-plt.plot(Zmean_[c], errz_[c], 'b.-')
-plt.legend(['manufacturier', 'marianne 2'])
-plt.savefig( 'output/figures/erreur_z_2.png' )
+# plt.plot(Zmean[a], Zmean[a]-Zmean_[c], 'k.-')
+plt.plot(Zmean[a][ff], errz[a][ff], 'r.-')
+plt.plot(Zmean_[c][ff], errz_[c][ff], 'b.-')
+plt.legend(['manufacturier', 'cibles'])
+plt.savefig( 'output/figures/erreur_z_cibles.png' )

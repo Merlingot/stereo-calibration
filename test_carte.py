@@ -1,14 +1,17 @@
 from modules.util import *
 from modules.points3d import *
 
+
+
+
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures_zed/captures_3/left005.jpg'
-fright = 'captures_zed/captures_3/right005.jpg'
+fleft = 'captures_zed/damier_cibles/left1.jpg'
+fright = 'captures_zed/damier_cibles/right1.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='cam1.xml'
-right_xml='cam2.xml'
+left_xml='cam1_cibles.xml'
+right_xml='cam2_cibles.xml'
 # ------------------------------------------------------------------------------
 ################################################################################
 
@@ -107,15 +110,15 @@ cloud = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 depth_map=cloud[:,:,2]*mask
 fig, ax=plt.subplots()
 a = plt.imshow(depth_map)
-a.set_clim(0,13)
+# a.set_clim(0,30)
 plt.colorbar()
 plt.show()
 # --------------------------------------------------------------------------
 # SAVEGARDER MESH ----------------------------------------------------------
-# colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
-# colors_valides = colors[mask.astype(bool)]
-# points_valides=cloud[mask.astype(bool)]
-# # mask2 = (points_valides[:,2]<2).astype(bool)
-# out_fn = '3dpoints/{}.ply'.format('cafeteria_zed')
-# write_ply(out_fn, points_valides, colors_valides)
+colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
+colors_valides = colors[mask.astype(bool)]
+points_valides=cloud[mask.astype(bool)]
+# mask2 = (points_valides[:,2]<2).astype(bool)
+out_fn = 'output/3dpoints/{}.ply'.format('gym_cibles')
+write_ply(out_fn, points_valides, colors_valides)
 # --------------------------------------------------------------------------

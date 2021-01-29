@@ -3,12 +3,12 @@ from modules.points3d import *
 
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures_zed/captures_3/left016.jpg'
-fright = 'captures_zed/captures_3/right016.jpg'
+fleft = 'captures_zed/captures_3/left002.jpg'
+fright = 'captures_zed/captures_3/right002.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='cam1_zed.xml'
-right_xml='cam2_zed.xml'
+left_xml='cam1_cibles.xml'
+right_xml='cam2_cibles.xml'
 # Damier -----------------------------------------------------------------------
 patternSize=(15,10)
 squaresize=7e-2
@@ -16,12 +16,11 @@ squaresize=7e-2
 ################################################################################
 winSize=(1, 1)
 
-cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
+cam1,cam2=get_cameras(left_xml, right_xml, alpha=-1)
 cam1.set_images(fleft)
 cam2.set_images(fright)
 
 # CALCUL DE TOUS LES COINS THÉORIQUES POUR LA CAMÉRA 1 -------------------------
-
 # Référentiel monde
 objp=coins_damier(patternSize,squaresize)
 world=objp.T
@@ -57,7 +56,6 @@ if ret_l*ret_r :
     corners_rec_r= cv.cornerSubPix(grayr, corners_r, winSize,(-1, -1), criteria)
 else:
     print('coins non détectés!')
-
 # ------------------------------------------------------------------------------
 
 # TRIANGULATION THÉORIQUE ------------------------------------------------------
@@ -100,20 +98,6 @@ points_rec1=np.stack((X,Y,Z)) # Référentiel rectifié
 # ------------------------------------------------------------------------------
 
 # GRAPHIQUES -------------------------------------------------------------------
-
-# plt.imshow(cam1.rectified)
-# plt.plot(corners_rec1[:,0,0],corners_rec1[:,0,1], '-o') # théoriques
-# plt.plot(corners_rec_l[:,0,0],corners_rec_l[:,0,1], '.' ) # détectés
-#
-# plt.plot(corners_rec2[:,0,0],corners_rec2[:,0,1], '-o') # théoriques
-# plt.plot(corners_rec_r[:,0,0],corners_rec_r[:,0,1], '.' ) # détectés
-#
-#
-# plt.figure()
-# err=corners_rec1-corners_rec_l
-# plt.plot(corners_rec1[:,0,0],err[:,0,0])
-# plt.plot(corners_rec1[:,0,1],err[:,0,1])
-# plt.show()
 
 # RÉFÉRENTIEL REC
 plt.figure()
