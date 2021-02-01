@@ -201,25 +201,28 @@ def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
     if ret :
         corners_rec = cv.cornerSubPix(gray, corners_rec, winSize,(-1, -1), criteria)
         # COINS DE LA CARTE DE PROFONDEUR --------------------------------------
-        pts_rec=[]
-        for i in range(len(corners_rec)):
-            col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
-            # Moyenne :
-            n=5
-            pts = points[row-n:row+n, col-n:col+n, :]
-            xmed=np.median(pts[:,:,0])
-            ymed=np.median(pts[:,:,1])
-            zmed=np.median(pts[:,:,2])
-            pt=np.array([xmed, ymed, zmed])
-            # pt = points[row,col]
-            pts_rec.append(pt)
-        pts_rec=np.array(pts_rec).T #points 3D dans le réféntiel de la caméra rectifiée
+        pts_rec=get_median(corners_rec, points, n=5).T #points 3D dans le réféntiel de la caméra rectifiée
         # ----------------------------------------------------------------------
         return pts_rec, corners_rec
 
     else:
         return None, None
     # --------------------------------------------------------------------------
+
+def get_median(corners_rec,points,n=5):
+    pts_rec=[]
+    for i in range(len(corners_rec)):
+        col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
+        # Moyenne :
+        pts = points[row-n:row+n+1, col-n:col+n+1, :]
+        xmed=np.median(pts[:,:,0])
+        ymed=np.median(pts[:,:,1])
+        zmed=np.median(pts[:,:,2])
+        pt=np.array([xmed, ymed, zmed])
+        # pt = points[row,col]
+        pts_rec.append(pt)
+    return np.array(pts_rec)
+
 
 def get_rec(objp, r, t, R, P ):
     # COINS THÉORIQUES ---------------------------------------------------------
