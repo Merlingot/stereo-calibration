@@ -175,7 +175,7 @@ def find_rt(patternSize, objp, not_rectified, K, D, winSize=(11,11)):
 
     # RÉSOLUTION POUR TROUVER R,T (unrec=R@world+T) ----------------------------
     ret, rvec, t = cv.solvePnP(objp, corners_unrec, K, D )
-    r=cv.Rodrigues(rvec)[0]
+    r,_=cv.Rodrigues(rvec)
     # --------------------------------------------------------------------------
 
     return ret, r, t
