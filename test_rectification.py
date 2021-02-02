@@ -4,12 +4,12 @@ import cv2 as cv
 
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures_zed/captures_3/left001.jpg'
-fright = 'captures_zed/captures_3/right001.jpg'
+fleft = 'data/zed/damier/captures_3/left001.jpg'
+fright = 'data/zed/damier/captures_3/right001.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='cam1_cibles.xml'
-right_xml='cam2_cibles.xml'
+left_xml='data/zed/cam1_cibles.xml'
+right_xml='data/zed/cam2_cibles.xml'
 # Damier -----------------------------------------------------------------------
 patternSize=(15,10)
 # ------------------------------------------------------------------------------

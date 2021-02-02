@@ -5,17 +5,17 @@ import cv2 as cv
 # ================ PARAMETRES ========================
 patternSize=(15,10)
 squaresize=7e-2
-single_path='captures_zed/tout/'
-stereo_path='captures_zed/tout/'
+single_path='zed/tout/'
+stereo_path='zed/tout/'
 single_detected_path='output/singles_detected/'
 stereo_detected_path='output/stereo_detected/'
 # ====================================================
 
 
-cibles=np.genfromtxt("captures_zed/objpts.txt").astype(np.float32)
-cibles_l=np.genfromtxt("captures_zed/pts_left.txt").astype(np.float32)
+cibles=np.genfromtxt("zed/objpts.txt").astype(np.float32)
+cibles_l=np.genfromtxt("zed/pts_left.txt").astype(np.float32)
 cibles_l=cibles_l.reshape(cibles_l.shape[0], 1, 2)
-cibles_r=np.genfromtxt("captures_zed/pts_right.txt").astype(np.float32)
+cibles_r=np.genfromtxt("zed/pts_right.txt").astype(np.float32)
 cibles_r=cibles_r.reshape(cibles_r.shape[0], 1, 2)
 cibles=cibles[:cibles_r.shape[0], :]
 

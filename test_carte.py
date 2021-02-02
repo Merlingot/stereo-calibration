@@ -1,24 +1,19 @@
 from modules.util import *
 from modules.points3d import *
-
-
-
+import cv2 as cv
 
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'captures_zed/damier_cibles/left1.jpg'
-fright = 'captures_zed/damier_cibles/right1.jpg'
+fleft = 'data/zed/cibles/left1.jpg'
+fright = 'data/zed/cibles/right1.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='cam1_cibles.xml'
-right_xml='cam2_cibles.xml'
-# ------------------------------------------------------------------------------
+left_xml='data/zed/cam1_cibles.xml'
+right_xml='data/zed/cam2_cibles.xml'
 ################################################################################
 
 
-cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
-import cv2 as cv
-cv.Rodrigues(cam2.R)
+cam1,cam2=get_cameras(left_xml, right_xml, alpha=-1)
 cam1.set_images(fleft)
 cam2.set_images(fright)
 
@@ -118,7 +113,6 @@ plt.show()
 colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
 colors_valides = colors[mask.astype(bool)]
 points_valides=cloud[mask.astype(bool)]
-# mask2 = (points_valides[:,2]<2).astype(bool)
 out_fn = 'output/3dpoints/{}.ply'.format('gym_cibles')
 write_ply(out_fn, points_valides, colors_valides)
 # --------------------------------------------------------------------------
