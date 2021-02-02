@@ -150,35 +150,32 @@ def save_mesh(rectified, points, mask, mesh_name):
     # --------------------------------------------------------------------------
 
 
-def find_rt(patternSize, objp, not_rectified, K, D, winSize=(11,11)):
-    """
-    Trouver la transformation (r,t) qui amène du référentiel de la caméra rectifiée (Xc,Yc,Zc)_rec au référentiel monde (Xw, Yw,Zw)
+def get_median(corners_rec,points,n=5):
+    pts_rec=[]
+    for i in range(len(corners_rec)):
+        col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
+        # Moyenne :
+        pts = points[row-n:row+n+1, col-n:col+n+1, :]
+        xmed=np.median(pts[:,:,0])
+        ymed=np.median(pts[:,:,1])
+        zmed=np.median(pts[:,:,2])
+        pt=np.array([xmed, ymed, zmed])
+        # pt = points[row,col]
+        pts_rec.append(pt)
+    return np.array(pts_rec)
 
-    R1: performs a change of basis from the unrectified first camera's coordinate system to the rectified first camera's coordinate system.
-    P1 : projects points given in the rectified first camera coordinate system into the rectified first camera's image
-    r,t : performs a change of basis form the world coordinate system to the first camera's distorted and unrectifed coordinate system
 
-    Coordonées cam rectifiée: rec=(Xc,Yc,Zc)_rec
-    Coordonées cam non-rectifiée : unrec=R1.T@rec=(Xc,Yc,Zc)
-    Coordonnées world : world=r.T@(unrec-t1)=(Xw,Yw,Zw)
-    """
 
-    # DÉTECTION DES COINS DANS L'IMAGE NON RECTIFIÉE ---------------------------
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    # Trouver coins dans l'image originale prise par la caméra
-    gray=cv.cvtColor(not_rectified, cv.COLOR_BGR2GRAY)
-    ret, corners_unrec = cv.findChessboardCorners(gray, patternSize, None)
-    if ret :
-        corners_unrec = cv.cornerSubPix(gray, corners_unrec, winSize,(-1, -1), criteria)
-    assert ret==True, "coins non détectés"
-    # --------------------------------------------------------------------------
 
-    # RÉSOLUTION POUR TROUVER R,T (unrec=R@world+T) ----------------------------
-    ret, rvec, t = cv.solvePnP(objp, corners_unrec, K, D )
-    r,_=cv.Rodrigues(rvec)
-    # --------------------------------------------------------------------------
 
-    return ret, r, t
+
+
+
+
+
+
+
+################################## MÉNAGE ######################################
 
 
 def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
@@ -207,22 +204,6 @@ def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
 
     else:
         return None, None
-    # --------------------------------------------------------------------------
-
-def get_median(corners_rec,points,n=5):
-    pts_rec=[]
-    for i in range(len(corners_rec)):
-        col, row = int(np.round(corners_rec[i,0,0])), int(np.round(corners_rec[i,0,1]))
-        # Moyenne :
-        pts = points[row-n:row+n+1, col-n:col+n+1, :]
-        xmed=np.median(pts[:,:,0])
-        ymed=np.median(pts[:,:,1])
-        zmed=np.median(pts[:,:,2])
-        pt=np.array([xmed, ymed, zmed])
-        # pt = points[row,col]
-        pts_rec.append(pt)
-    return np.array(pts_rec)
-
 
 def get_rec(objp, r, t, R, P ):
     # COINS THÉORIQUES ---------------------------------------------------------
@@ -232,56 +213,6 @@ def get_rec(objp, r, t, R, P ):
     # corners_rec, _ = cv.projectPoints(rec, np.zeros((3,1)), np.zeros((3,1)), P[:,:3], np.zeros((1,4))) #points théoriques dans ref image cam rectifiée
     # --------------------------------------------------------------------------
     return rec
-
-
-def err_points(patternSize, pts_th, pts_cal):
-    """
-    Calcule l'erreur entre les points théoriques pts_th et les points calculés pts_cal. Les points sont les coins d'un damier.
-    Args:
-        patternSize : (row,col)
-        pts_th : points théoriques.
-        pts_cal : points calculées.
-    Returns:
-        errtot : erreur RMS totale sur la position
-        (errx,erry,errz): erreur RMS sur les coordonées x,y,z
-                          - en coordonées cartésiennes -
-        (err_rayon, err_theta) : erreur RMS sur le rayon et sur l'angle theta
-                                 -en coordonées cyclindriques r,theta,z-
-    """
-
-    arr=np.zeros((patternSize[1],patternSize[0]))
-    x,y,z=arr.copy(), arr.copy(), arr.copy()
-    xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
-    j=0;n=patternSize[0]
-    for i in range(patternSize[1]):
-        x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
-        xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
-        j+=n
-    # x,y,z = pts_cal[0,:], pts_cal[1,:], pts_cal[2,:]
-    # xo,yo,zo = pts_th[0,:], pts_th[1,:], pts_th[2,:]
-
-    # Erreur en coordonées cartésiennes:
-    errX=xo-x; errY=yo-y; errZ=zo-z
-    # Erreur en coordonées cylindriques, r=x^2+y^2
-    rayono = np.sqrt( xo**2 + yo**2  )
-    rayon = np.sqrt( x**2 + y**2  )
-    err_r = rayono-rayon
-
-    thetao = np.arctan(xo/zo)*180/np.pi
-    theta = np.arctan(x/z)*180/np.pi
-    err_t = (thetao-theta)
-
-    # Erreurs RMS
-    errx = np.sqrt((errX**2).mean())
-    erry = np.sqrt((errY**2).mean())
-    errz = np.sqrt((errZ**2).mean())
-    errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
-    err_rayon = np.sqrt( (err_r**2).mean() )
-    err_theta = np.sqrt( (err_t**2).mean() )
-
-    return errtot, (errx, erry, errz), (err_rayon, err_theta), (xo, x, yo, y, zo, z )
-
-
 
 def triangulation_rec( patternSize, rectifiedL, rectifiedR, P1, P2, winSize=(11,11) ):
 
@@ -317,15 +248,40 @@ def triangulation_rec( patternSize, rectifiedL, rectifiedR, P1, P2, winSize=(11,
 
     return points_rec1
 
+def err_points(patternSize, pts_th, pts_cal):
+    """
+    Calcule l'erreur entre les points théoriques pts_th et les points calculés pts_cal. Les points sont les coins d'un damier.
+    Args:
+        patternSize : (row,col)
+        pts_th : points théoriques.
+        pts_cal : points calculées.
+    Returns:
+        errtot : erreur RMS totale sur la position
+        (errx,erry,errz): erreur RMS sur les coordonées x,y,z
+                          - en coordonées cartésiennes -
+    """
 
+    arr=np.zeros((patternSize[1],patternSize[0]))
+    x,y,z=arr.copy(), arr.copy(), arr.copy()
+    xo,yo,zo=arr.copy(), arr.copy(), arr.copy()
+    j=0;n=patternSize[0]
+    for i in range(patternSize[1]):
+        x[i,:]=pts_cal[0,j:j+n]; y[i,:]=pts_cal[1,j:j+n]; z[i,:]=pts_cal[2,j:j+n]
+        xo[i,:]=pts_th[0,j:j+n]; yo[i,:]=pts_th[1,j:j+n]; zo[i,:]=pts_th[2,j:j+n]
+        j+=n
+    # x,y,z = pts_cal[0,:], pts_cal[1,:], pts_cal[2,:]
+    # xo,yo,zo = pts_th[0,:], pts_th[1,:], pts_th[2,:]
 
+    # Erreur en coordonées cartésiennes:
+    errX=xo-x; errY=yo-y; errZ=zo-z
+    # Erreurs RMS
+    errx = np.sqrt((errX**2).mean())
+    erry = np.sqrt((errY**2).mean())
+    errz = np.sqrt((errZ**2).mean())
+    errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
 
+    return errtot, (errx, erry, errz), (xo, x, yo, y, zo, z)
 
-
-
-
-
-###############################################################################
 
 
 def triangulation_world(patternSize, squaresize, K1, K2, D1, D2, left, right):
@@ -423,3 +379,34 @@ def err_rt(objp, not_rectified, rectified, K, D, R, P, r, t ):
     err_rec = np.sqrt( np.mean( np.sum( (corners_rec-img_rec)**2, axis=2 ) )  )
     # --------------------------------------------------------------------------
     return err_unrec, err_rec
+
+
+def find_rt(patternSize, objp, not_rectified, K, D, winSize=(11,11)):
+    """
+    Trouver la transformation (r,t) qui amène du référentiel de la caméra rectifiée (Xc,Yc,Zc)_rec au référentiel monde (Xw, Yw,Zw)
+
+    R1: performs a change of basis from the unrectified first camera's coordinate system to the rectified first camera's coordinate system.
+    P1 : projects points given in the rectified first camera coordinate system into the rectified first camera's image
+    r,t : performs a change of basis form the world coordinate system to the first camera's distorted and unrectifed coordinate system
+
+    Coordonées cam rectifiée: rec=(Xc,Yc,Zc)_rec
+    Coordonées cam non-rectifiée : unrec=R1.T@rec=(Xc,Yc,Zc)
+    Coordonnées world : world=r.T@(unrec-t1)=(Xw,Yw,Zw)
+    """
+
+    # DÉTECTION DES COINS DANS L'IMAGE NON RECTIFIÉE ---------------------------
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+    # Trouver coins dans l'image originale prise par la caméra
+    gray=cv.cvtColor(not_rectified, cv.COLOR_BGR2GRAY)
+    ret, corners_unrec = cv.findChessboardCorners(gray, patternSize, None)
+    if ret :
+        corners_unrec = cv.cornerSubPix(gray, corners_unrec, winSize,(-1, -1), criteria)
+    assert ret==True, "coins non détectés"
+    # --------------------------------------------------------------------------
+
+    # RÉSOLUTION POUR TROUVER R,T (unrec=R@world+T) ----------------------------
+    ret, rvec, t = cv.solvePnP(objp, corners_unrec, K, D )
+    r,_=cv.Rodrigues(rvec)
+    # --------------------------------------------------------------------------
+
+    return ret, r, t
