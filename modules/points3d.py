@@ -280,7 +280,9 @@ def err_points(patternSize, pts_th, pts_cal):
     errz = np.sqrt((errZ**2).mean())
     errtot=np.sqrt( (errX**2 + errY**2 + errZ**2).mean() )
 
-    return errtot, (errx, erry, errz), (xo, x, yo, y, zo, z)
+    zmean=np.mean(zo)
+
+    return errtot, zmean
 
 
 

@@ -19,7 +19,7 @@ class StereoCalibration():
         self.patternSize=patternSize
         self.squaresize=squaresize #utiliser des unités SI svp
         self.objp = coins_damier(patternSize,squaresize)
-        self.color_flag=cv.COLOR_RGB2GRAY
+        self.color_flag=cv.COLOR_BGR2GRAY
 
         # Critères ------------------------------------------------------------
         self.criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
