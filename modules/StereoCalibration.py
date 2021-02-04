@@ -75,7 +75,7 @@ class StereoCalibration():
                 corners2= cv.cornerSubPix(gray, corners, (3, 3),(-1, -1), self.criteria);
                 imgpoints.append(corners2)
                 # Dessiner les chessboard -------------------------------------
-                if self.draw=True:
+                if self.draw==True:
                     _ = cv.drawChessboardCorners(color, self.patternSize, corners2, True)
                     fname='{}{:03d}.jpg'.format(view, i+1)
                     cv.imwrite(self.single_detected_path + fname, color)
@@ -112,7 +112,7 @@ class StereoCalibration():
                 imgpoints_right.append(corners2_r)
 
                 # Dessiner les chessboard -------------------------------------
-                if self.draw=True
+                if self.draw==True:
                     _ = cv.drawChessboardCorners(color_l, self.patternSize, corners2_l, True)
                     fname='{}{:03d}.jpg'.format('left', i+1)
                     cv.imwrite(self.stereo_detected_path + fname, color_l)
