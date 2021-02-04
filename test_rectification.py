@@ -4,22 +4,21 @@ import cv2 as cv
 
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'data/zed/damier/captures_3/left001.jpg'
-fright = 'data/zed/damier/captures_3/right001.jpg'
+left='data/12mm/damier/tout/left019.jpg'
+right='data/12mm/damier/tout/right019.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='data/zed/cam1_cibles.xml'
-right_xml='data/zed/cam2_cibles.xml'
-# Damier -----------------------------------------------------------------------
+left_xml='data/12mm/cam1_cibles.xml'
+right_xml='data/12mm/cam2_cibles.xml'
 patternSize=(15,10)
 # ------------------------------------------------------------------------------
 ################################################################################
 
 _,_, _, _ ,_,E, F = readXML(left_xml) # left
 
-cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
-cam1.set_images(fleft)
-cam2.set_images(fright)
+cam1,cam2=get_cameras(left_xml, right_xml, alpha=-1)
+cam1.set_images(left)
+cam2.set_images(right)
 
 not_rectifiedL=cv.cvtColor(cam1.not_rectified, cv.COLOR_RGB2GRAY)
 not_rectifiedR=cv.cvtColor(cam2.not_rectified, cv.COLOR_RGB2GRAY)

@@ -49,7 +49,7 @@ def clickOnTheTargets(img_rgb):
             print("ZZZZZZZZZZZZZZZZZZ")
 
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
-    corners = cv.cornerSubPix(img_gray, np.float32(pts2d), (3,3), (-1,-1), criteria)
+    corners = cv.cornerSubPix(img_gray, np.float32(pts2d), (1,1), (-1,-1), criteria)
     img = img_rgb.copy()
     for p in corners:
         center = (int(p[0]), int(p[1]))
@@ -57,23 +57,23 @@ def clickOnTheTargets(img_rgb):
     return corners, img
 
 
-# LEFT
-img = cv.imread("data/zed/cibles/left1.jpg")
+
+view='left'
+img = cv.imread("data/6mm/cibles/{}.jpg".format(view))
 pts, img = clickOnTheTargets(img)
 
-cv.imwrite("cornerSubPix_left.png", img)
-np.savetxt("pts_left1.txt", pts)
+cv.imwrite("data/6mm/cibles/cornerSubPix_{}.png".format(view), img)
+np.savetxt("data/6mm/cibles/pts_{}_.txt".format(view), pts)
+
+
+
+
+
+
+
 # with open('pts_right.npy', 'wb') as f:
 #     np.save(f, pts)
 
-# RIGHT
-# img = cv.imread("captures_zed/damier_cibles/right1.jpg")
-# pts, img = clickOnTheTargets(img)
-#
-# cv.imwrite("cornerSubPix_right.png", img)
-# np.savetxt("pts_right.txt", pts)
-# with open('pts_right.npy', 'wb') as f:
-#     np.save(f, pts)
 
 # # pts = np.loadtxt("pts_left.txt")
 # # print(pts)

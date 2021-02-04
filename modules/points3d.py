@@ -74,7 +74,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # FORMATAGE PRE-CALCUL -----------------------------------------------------
     # DOWNSCALE
-    downscale=1
+    downscale=2
     new_num_disp = int(num_disp / downscale)
     n_width = int(rectifiedL.shape[1] * 1/downscale)
     n_height = int(rectifiedR.shape[0] * 1/downscale)
@@ -86,8 +86,8 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
     grayR_down = cv.cvtColor(downR,cv.COLOR_BGR2GRAY)
 
     # SMOOTH
-    # grayL_down = cv.medianBlur(grayL_down,3)
-    # grayR_down = cv.medianBlur(grayR_down,3)
+    grayL_down = cv.medianBlur(grayL_down,3)
+    grayR_down = cv.medianBlur(grayR_down,3)
     # --------------------------------------------------------------------------
 
     # CALCULS DISPARITÉ --------------------------------------------------------
@@ -126,6 +126,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # REPROJECT TO 3D ----------------------------------------------------------
     # format disparity
+    # disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
     disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
 
     # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system

@@ -40,13 +40,13 @@ while(True):
         text_progress="Il reste " + str(capture_qty-capture_taken)+ " image(s) a prendre."
 
     # Acquisition du flux video
-    left_frame_color = cap_left.read()
-    right_frame_color = cap_right.read()
+    _, left_frame_color = cap_left.read()
+    _, right_frame_color = cap_right.read()
 
 
     #Transformation de l'image en nuances de gris
-    _, left_frame = cv2.cvtColor(left_frame_color, cv2.COLOR_BGR2GRAY)
-    _, right_frame = cv2.cvtColor(right_frame_color, cv2.COLOR_BGR2GRAY)
+    left_frame = cv2.cvtColor(left_frame_color, cv2.COLOR_BGR2GRAY)
+    right_frame = cv2.cvtColor(right_frame_color, cv2.COLOR_BGR2GRAY)
 
     # Enregistrement des deux frames sans écritures
     if cv2.waitKey(1) == ord('c'):

@@ -4,18 +4,22 @@ import cv2 as cv
 
 ################################################################################
 # Choisir une image à analyser -------------------------------------------------
-fleft = 'data/zed/cibles/left1.jpg'
-fright = 'data/zed/cibles/right1.jpg'
+left='data/12mm/cibles/reconstruction/left.jpg'
+right='data/12mm/cibles/reconstruction/right.jpg'
 # ------------------------------------------------------------------------------
 # Fichiers de calibration ------------------------------------------------------
-left_xml='data/zed/cam1_cibles.xml'
-right_xml='data/zed/cam2_cibles.xml'
+left_xml='data/12mm/cam1_cibles.xml'
+right_xml='data/12mm/cam2_cibles.xml'
 ################################################################################
 
 
-cam1,cam2=get_cameras(left_xml, right_xml, alpha=-1)
-cam1.set_images(fleft)
-cam2.set_images(fright)
+cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
+cam1.set_images(left)
+cam2.set_images(right)
+
+plt.figure()
+plt.imshow(cam1.rectified)
+
 
 rectifiedL=cam1.rectified
 rectifiedR=cam2.rectified
@@ -87,7 +91,7 @@ mask[ROI[1]:ROI[1]+ROI[3], ROI[0]:ROI[0]+ROI[2]]=1
 
 
 # BILATERAL FILTER ---------------------------------------------------------
-fbs_spatial=30.0
+fbs_spatial=8.0
 fbs_luma=8.0
 fbs_chroma=8.0
 fbs_lambda=128.0
@@ -98,6 +102,12 @@ solved_filtered_disp = cv.ximgproc.fastBilateralSolverFilter(rectifiedL, filtere
 # format disparity
 disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
 
+fig, ax=plt.subplots()
+a = plt.imshow(disparity)
+# a.set_clim(0,35)
+plt.colorbar()
+
+
 # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system
 cloud = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 
@@ -105,7 +115,7 @@ cloud = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 depth_map=cloud[:,:,2]*mask
 fig, ax=plt.subplots()
 a = plt.imshow(depth_map)
-# a.set_clim(0,30)
+# a.set_clim(0,35)
 plt.colorbar()
 plt.show()
 # --------------------------------------------------------------------------
@@ -113,6 +123,6 @@ plt.show()
 colors = cv.cvtColor(rectifiedL, cv.COLOR_BGR2RGB)
 colors_valides = colors[mask.astype(bool)]
 points_valides=cloud[mask.astype(bool)]
-out_fn = 'output/3dpoints/{}.ply'.format('gym_cibles')
+# out_fn = 'output/3dpoints/{}.ply'.format('gym_12mm_fbs')
 write_ply(out_fn, points_valides, colors_valides)
 # --------------------------------------------------------------------------

@@ -1,34 +1,76 @@
 from modules.StereoCalibration import StereoCalibration
 from modules.util import *
 import cv2 as cv
+import matplotlib.pyplot as plt
 
 # ================ PARAMETRES ========================
 patternSize=(15,10)
 squaresize=7e-2
-single_path='zed/tout/'
-stereo_path='zed/tout/'
+single_path='data/6mm/damier/tout/'
+stereo_path='data/6mm/damier/tout/'
 single_detected_path='output/singles_detected/'
 stereo_detected_path='output/stereo_detected/'
 # ====================================================
 
+CIBLES=[]
+CIBLES_L=[]
+CIBLES_R=[]
 
-cibles=np.genfromtxt("zed/objpts.txt").astype(np.float32)
-cibles_l=np.genfromtxt("zed/pts_left.txt").astype(np.float32)
+cibles=np.genfromtxt("data/6mm/cibles/objpts.txt").astype(np.float32)
+cibles_l=np.genfromtxt("data/6mm/cibles/pts_left.txt").astype(np.float32)
 cibles_l=cibles_l.reshape(cibles_l.shape[0], 1, 2)
-cibles_r=np.genfromtxt("zed/pts_right.txt").astype(np.float32)
+cibles_r=np.genfromtxt("data/6mm/cibles/pts_right.txt").astype(np.float32)
+cibles_r=cibles_r.reshape(cibles_r.shape[0], 1, 2)
+cibles=cibles[:cibles_r.shape[0], :]
+CIBLES.append(cibles)
+CIBLES_L.append(cibles_l)
+CIBLES_R.append(cibles_r)
+
+cibles=np.genfromtxt("data/6mm/cibles/reconstruction/objpts.txt").astype(np.float32)
+cibles_l=np.genfromtxt("data/6mm/cibles/reconstruction/pts_left.txt").astype(np.float32)
+cibles_l=cibles_l.reshape(cibles_l.shape[0], 1, 2)
+cibles_r=np.genfromtxt("data/6mm/cibles/reconstruction/pts_right.txt").astype(np.float32)
 cibles_r=cibles_r.reshape(cibles_r.shape[0], 1, 2)
 cibles=cibles[:cibles_r.shape[0], :]
 
+CIBLES.append(cibles)
+CIBLES_L.append(cibles_l)
+CIBLES_R.append(cibles_r)
+
+# plt.plot(cibles[:,0],cibles[:,1], '-o')
+# imgl = cv.imread('data/6mm/cibles/cornerSubPix_left.png')
+# plt.imshow(imgl)
+# plt.plot(cibles_l[:,0,0],cibles_l[:,0,1], '-o')
+# imgr = cv.imread('data/6mm/cibles/cornerSubPix_right.png')
+# plt.imshow(imgr)
+# plt.plot(cibles_r[:,0,0],cibles_r[:,0,1], '-o')
 
 obj = StereoCalibration(patternSize, squaresize)
-obj.calibrateIntrinsics(single_path, single_detected_path, cibles=cibles, cibles_l=cibles_l, cibles_r=cibles_r, fisheye=False)
-obj.calibrateExtrinsics(stereo_path, stereo_detected_path, cibles=cibles, cibles_l=cibles_l, cibles_r=cibles_r, fisheye=False)
-obj.saveResultsXML(left_name='cam1_cibles', right_name='cam2_cibles')
-# obj.reprojection('output/reprojection/')
+obj.calibrateIntrinsics(single_path, single_detected_path, cibles=CIBLES, cibles_l=CIBLES_L, cibles_r=CIBLES_R, fisheye=False)
+obj.draw=True
+obj.calibrateExtrinsics(stereo_path, stereo_detected_path, cibles=CIBLES, cibles_l=CIBLES_L, cibles_r=CIBLES_R, fisheye=False, calib_2_sets=True)
+obj.saveResultsXML(left_name='data/6mm/cam1_cibles', right_name='data/6mm/cam2_cibles')
+# obj.perViewErrors
+# obj.reprojection('output/reprojection/',5)
 
 
 
 
+
+# import glob
+# g0 = glob.glob('data/6mm/cibles/originales/left*.jpg')
+# g0 = np.sort(g0)
+# for i in range(len(g0)):
+#     img = cv.imread(g0[i])
+#     img=cv.flip(img,-1)
+#     cv.imwrite('data/6mm/cibles/flip/left{:03d}.jpg'.format(i+1),img)
+#
+# g0 = glob.glob('data/6mm/damier/originales/gauche/right*.jpg')
+# g0 += glob.glob('data/6mm/damier/originales/droite/right*.jpg')
+# g0 = np.sort(g0)
+# for i in range(len(g0)):
+#     img = cv.imread(g0[i])
+#     cv.imwrite('data/6mm/damier/tout/right{:03d}.jpg'.format(i),img)
 
 
 

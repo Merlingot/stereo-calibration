@@ -1,18 +1,18 @@
-
+s
 from modules.points3d import *
 from modules.util import *
 
 ################################################################################
 # Fichiers de calibration ------------------------------------------------------
-left_xml='data/zed/cam1_zed.xml'
-right_xml='data/zed/cam2_zed.xml'
+left_xml='data/12mm/cam1_12mm.xml'
+right_xml='data/12mm/cam2_12mm.xml'
 # Damier -----------------------------------------------------------------------
 patternSize=(15,10)
 squaresize=7e-2
 # Images -----------------------------------------------------------------------
-left=np.concatenate( (np.sort(glob.glob("data/zed/damier/captures_3/left*.jpg"))[0:15] , np.sort(glob.glob("data/zed/damier/captures_2/left*.jpg"))[6:14]))
+left=np.concatenate( (np.sort(glob.glob("data/12mm/damier/captures_3/left*.jpg"))[0:15] , np.sort(glob.glob("data/12mm/damier/captures_2/left*.jpg"))[6:14]))
 left
-right=np.concatenate( (np.sort(glob.glob("data/zed/damier/captures_3/right*.jpg"))[0:15] , np.sort(glob.glob("data/zed/damier/captures_2/right*.jpg"))[6:14]))
+right=np.concatenate( (np.sort(glob.glob("data/12mm/damier/captures_3/right*.jpg"))[0:15] , np.sort(glob.glob("data/12mm/damier/captures_2/right*.jpg"))[6:14]))
 ################################################################################
 
 # Déclaration des listes d'erreur ----------------------------------------------
