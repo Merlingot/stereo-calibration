@@ -55,7 +55,7 @@ def get_cameras(left_xml, right_xml, alpha=0):
 
     return cam1, cam2
 
-def calcul_mesh(rectifiedL, rectifiedR, Q):
+def calcul_mesh(rectifiedL, rectifiedR, Q, downscale=1, sigma_wls=1.5, fbs_spatial=8.0, bilateral_on=False):
 
     # CREATION STEREO MATCHERS -------------------------------------------------
     num_disp = 5*16
@@ -74,7 +74,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # FORMATAGE PRE-CALCUL -----------------------------------------------------
     # DOWNSCALE
-    downscale=2
+    # downscale=2
     new_num_disp = int(num_disp / downscale)
     n_width = int(rectifiedL.shape[1] * 1/downscale)
     n_height = int(rectifiedR.shape[0] * 1/downscale)
@@ -99,7 +99,7 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
 
     # WLS FILTER ---------------------------------------------------------------
     lambda_wls = 8000.0
-    sigma_wls = 1.5
+    # sigma_wls = 1.5
     wls_filter = cv.ximgproc.createDisparityWLSFilter(matcher_left=left_matcher)
     wls_filter.setLambda(lambda_wls)
     wls_filter.setSigmaColor(sigma_wls)
@@ -114,21 +114,21 @@ def calcul_mesh(rectifiedL, rectifiedR, Q):
     #MASK
     mask=np.zeros(conf_map.shape, conf_map.dtype)
     mask[ROI[1]:ROI[1]+ROI[3], ROI[0]:ROI[0]+ROI[2]]=1
+    # FORMAT DISPARITY
+    disparity=filtered_disp.astype(np.float32)/16.0*mask
     # --------------------------------------------------------------------------
 
     # BILATERAL FILTER ---------------------------------------------------------
-    fbs_spatial=8.0
-    fbs_luma=8.0
-    fbs_chroma=8.0
-    fbs_lambda=128.0
-    solved_filtered_disp = cv.ximgproc.fastBilateralSolverFilter(rectifiedL, filtered_disp, conf_map/255.0, None, fbs_spatial, fbs_luma, fbs_chroma, fbs_lambda)
+    if bilateral_on :
+        # fbs_spatial=8.0
+        fbs_luma=8.0
+        fbs_chroma=8.0
+        fbs_lambda=128.0
+        solved_filtered_disp = cv.ximgproc.fastBilateralSolverFilter(rectifiedL, filtered_disp, conf_map/255.0, None, fbs_spatial, fbs_luma, fbs_chroma, fbs_lambda)
+        disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
     # --------------------------------------------------------------------------
 
     # REPROJECT TO 3D ----------------------------------------------------------
-    # format disparity
-    # disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
-    disparity=solved_filtered_disp.astype(np.float32)/16.0*mask
-
     # Note: If one uses Q obtained by stereoRectify, then the returned points are represented in the first camera's rectified coordinate system
     points = cv.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
 
