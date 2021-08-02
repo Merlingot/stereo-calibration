@@ -64,17 +64,3 @@ pts, img = clickOnTheTargets(img)
 
 cv.imwrite("data/6mm/cibles/cornerSubPix_{}.png".format(view), img)
 np.savetxt("data/6mm/cibles/pts_{}_.txt".format(view), pts)
-
-
-
-
-
-
-
-# with open('pts_right.npy', 'wb') as f:
-#     np.save(f, pts)
-
-
-# # pts = np.loadtxt("pts_left.txt")
-# # print(pts)
-# # print("the end")

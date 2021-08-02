@@ -168,17 +168,6 @@ def get_median(corners_rec,points,n=5):
 
 
 
-
-
-
-
-
-
-
-
-################################## MÉNAGE ######################################
-
-
 def coins_mesh(patternSize,rectified, points, winSize=(11,11)):
     """
     Arrange des vecteurs contenant les points théoriques et les points calculés à partir de la carte de disparité

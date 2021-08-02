@@ -385,14 +385,5 @@ print(std)
 
 # RÉFÉRENTIEL RECTIFIÉ - COORDONÉES SPHÉRIQUES
 # _, ( stdRho, stdTheta, stdPhi) = stats_spherique(rec, pts_rec, new_points_per_rows, name='spherique')
-# --------------------------------------------------------------------------
-
-    # return std_plan, std_distance, std
-
-
-std_plan
-std
-
-
 # std_plan, std_distance, std = erreur_cibles(left_xml, right_xml, left, right, fname_cibles, fname_cibles_l, points_per_rows )
 # print(std_plan, std_distance, std)
