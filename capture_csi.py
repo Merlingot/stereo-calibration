@@ -22,8 +22,8 @@ clean_folders([folder])
 
 
 # Déclaration du périphérique de capture
-cap_left = cv.videoCapture(0)
-cap_left = cv.videoCapture(1)
+cap_left = cv.VideoCapture(0)
+cap_right = cv.VideoCapture(1)
 
 while(True):
     if capture_taken==0:
