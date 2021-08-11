@@ -3,16 +3,21 @@ from modules.points3d import *
 import cv2 as cv
 
 ################################################################################
-# Choisir une image à analyser -------------------------------------------------
-left='data/12mm/damier/tout/left019.jpg'
-right='data/12mm/damier/tout/right019.jpg'
-# ------------------------------------------------------------------------------
-# Fichiers de calibration ------------------------------------------------------
-left_xml='data/12mm/cam1_cibles.xml'
-right_xml='data/12mm/cam2_cibles.xml'
+# Choisir une image à analyser:
+left='captures/captures_calibration/left001.jpg'
+right='captures/captures_calibration/right001.jpg'
+
+
+# Fichiers de calibration:
+left_xml='cam1.xml'
+right_xml='cam2.xml'
+
+
+# Pattern du damier :
 patternSize=(15,10)
-# ------------------------------------------------------------------------------
 ################################################################################
+
+
 
 _,_, _, _ ,_,E, F = readXML(left_xml) # left
 

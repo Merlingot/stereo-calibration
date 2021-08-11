@@ -1,29 +1,28 @@
-################################################################################
-# Projet : Integration cours initiation
-# Description Script : Effectuer une capture synchrone de deux cameras
-# Date : 29 aout 2020
-# Auteur : Carl Beaulieu
-################################################################################
-
 import cv2 as cv
 from modules.util import clean_folders
+
+
+################################################################################
+# Choisir un folder où enregistrer les images (le folder sera créé automatiquement )
+folder="captures/captures_calibration/"
+
+
+# Déclaration des périphériques de capture
+cap_left = cv.VideoCapture(0)
+cap_right = cv.VideoCapture(1)
+################################################################################
+
 
 # Variables textuel
 text_title="Assistant de calibration"
 text_progress=""
-
 # Nombres de captures prises
 capture_taken=0
 # Nombres de captures à prendre et folder
 capture_qty=40
-folder="captures/captures_calibration/"
-
+# Création du folder
 clean_folders([folder])
 
-
-# Déclaration du périphérique de capture
-cap_left = cv.VideoCapture(0)
-cap_right = cv.VideoCapture(1)
 
 while(True):
     if capture_taken==0:
