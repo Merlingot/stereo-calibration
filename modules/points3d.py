@@ -8,6 +8,10 @@ from modules.util import *
 
 
 class Camera():
+    """
+    Classe Camera : sert à handle les infos des caméras
+
+    """
 
     def __init__(self, cameraMatrix, distCoeffs, rectificationMatix, projectionMatrix, map_x, map_y):
 
@@ -31,6 +35,10 @@ class Camera():
 
 
 def get_cameras(left_xml, right_xml, alpha=0):
+
+    """
+    Sert à initialiser des objets de la classe Camera correctement à partir de fichiers de calibration .xml
+    """
 
     # LIRE FICHIERS DE CALIBRATION ---------------------------------------------
     K1,d1, _, _ ,imageSize, _, _ = readXML(left_xml) # left
@@ -56,6 +64,27 @@ def get_cameras(left_xml, right_xml, alpha=0):
     return cam1, cam2
 
 def calcul_mesh(rectifiedL, rectifiedR, Q, downscale=1, sigma_wls=1.5, fbs_spatial=8.0, bilateral_on=False):
+
+    """
+    Args:
+        rectifiedL : np.array()
+            Image à analyser pour la caméra de gauche. L'image doit être rectifiée.
+        rectifiedR : np.array()
+            Image à analyser pour la caméra de gauche. L'image doit être rectifiée.
+        Q : matrice
+            Matrice Q calculée lors de la calibration (référentiel caméra de gauche)
+
+        PARAMÈTRES POUR LE PREPROCESSING:
+        downscale : int
+            facteur de downscale des images pour l'analyse
+        sigma_wls : float [0.8, 2]
+            «SigmaColor is a parameter defining how sensitive the filtering process is to source image edges. Large values can lead to disparity leakage through low-contrast edges. Small values can make the filter too sensitive to noise and textures in the source image. Typical values range from 0.8 to 2.0.»
+        fbs_spatial: float
+            «Filter sigma in the coordinate space. A larger value of the parameter means that farther pixels will influence each other as long as their colors are close enough (see sigmaColor ).»
+        bilateral_on : Bool
+            True: un filtre fastBilateralSolverFilter est appliqué sur l'image
+            False : le filtre n'est pas appliqué
+    """
 
     # CREATION STEREO MATCHERS -------------------------------------------------
     num_disp = 5*16

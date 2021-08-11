@@ -2,19 +2,12 @@ from modules.util import *
 from modules.points3d import *
 import cv2 as cv
 
+from config import calibration_folder, left_xml, right_xml, patternSize
+
 ################################################################################
 # Choisir une image à analyser:
-left='captures/captures_calibration/left001.jpg'
-right='captures/captures_calibration/right001.jpg'
-
-
-# Fichiers de calibration:
-left_xml='cam1.xml'
-right_xml='cam2.xml'
-
-
-# Pattern du damier :
-patternSize=(15,10)
+left='{}left001.jpg'.format(calibration_folder)
+right='{}right001.jpg'.format(calibration_folder)
 ################################################################################
 
 

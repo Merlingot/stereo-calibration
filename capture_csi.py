@@ -1,12 +1,9 @@
 import cv2 as cv
 from modules.util import clean_folders
 
+from config import calibration_folder as folder
 
 ################################################################################
-# Choisir un folder où enregistrer les images (le folder sera créé automatiquement )
-folder="captures/captures_calibration/"
-
-
 # Déclaration des périphériques de capture
 cap_left = cv.VideoCapture(0)
 cap_right = cv.VideoCapture(1)

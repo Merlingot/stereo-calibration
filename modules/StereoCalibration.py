@@ -181,6 +181,8 @@ class StereoCalibration():
     def calibrateStereo(self, stereo_path, stereo_detected_path, fisheye=False, calib_2_sets=False, draw=False):
         """
         ||Public method||
+        Calibration stéréo de 2 caméra
+
         Args:
             stereo_path (str): "path_to_stereo_images/"
             fisheye (Bool): True pour caméra fisheye
@@ -235,7 +237,7 @@ class StereoCalibration():
     def calibrateIntrinsics(self, single_path, single_detected_path, cibles, cibles_l, cibles_r, fisheye=False):
         """
         ||Public method||
-        Calibration individuelle de 2 caméras
+        Calibration individuelle de 2 caméras AVEC DES CIBLES
 
         Args:
             single_path (str): "path_to_single_images/"
@@ -301,6 +303,7 @@ class StereoCalibration():
     def calibrateExtrinsics(self, stereo_path, stereo_detected_path, cibles, cibles_l, cibles_r, fisheye=False, calib_2_sets=False):
         """
         ||Public method||
+        Calibration stéréo de deux caméra AVEC DES CIBLES
         Args:
             stereo_path (str): "path_to_stereo_images/"
             fisheye (Bool): True pour caméra fisheye
