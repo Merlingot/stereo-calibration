@@ -10,8 +10,8 @@ left_xml='cam1.xml'
 right_xml='cam2.xml'
 
 # Paramètres du damier
-patternSize = (6,8)
-squareSize = 3e-2
+patternSize = (10,7)
+squareSize = 2e-2
 
 # Path vers les folders où enregistrer les images détectées
 single_detected_path='output/singles_detected/' #images détectée lors de la calibration individuelle

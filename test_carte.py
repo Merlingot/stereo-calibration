@@ -6,8 +6,8 @@ from config import calibration_folder, left_xml, right_xml
 
 ################################################################################
 # Choisir une image à analyser:
-left='{}left001.jpg'.format(calibration_folder)
-right='{}right001.jpg'.format(calibration_folder)
+left='{}left002.jpg'.format(calibration_folder)
+right='{}right002.jpg'.format(calibration_folder)
 ################################################################################
 
 

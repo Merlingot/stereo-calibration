@@ -5,9 +5,9 @@ import cv2 as cv
 from config import calibration_folder, left_xml, right_xml, patternSize
 
 ################################################################################
-# Choisir une image à analyser:
-left='{}left001.jpg'.format(calibration_folder)
-right='{}right001.jpg'.format(calibration_folder)
+# Choisir une image spécifique à analyser:
+left='{}left002.jpg'.format(calibration_folder)
+right='{}right002.jpg'.format(calibration_folder)
 ################################################################################
 
 
