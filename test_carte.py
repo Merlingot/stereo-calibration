@@ -30,6 +30,6 @@ plt.show()
 colors = cv.cvtColor(cam1.rectified, cv.COLOR_BGR2RGB)
 colors_valides = colors[mask.astype(bool)]
 points_valides=cloud[mask.astype(bool)]
-# out_fn = 'output/3dpoints/{}.ply'.format('gym_12mm_fbs')
-# write_ply(out_fn, points_valides, colors_valides)
+out_fn = 'output/3dpoints/{}.ply'.format('gym_12mm_fbs')
+write_ply(out_fn, points_valides, colors_valides)
 # --------------------------------------------------------------------------
