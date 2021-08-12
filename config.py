@@ -1,9 +1,6 @@
-# Dossier où sont les images de calibration à analyser
-calibration_folder = 'captures_calibration/'
-
 # Path vers les images à analyser
-single_path=calibration_folder # images individuelles
-stereo_path=calibration_folder # images stéréo (peuvent être les mêmes que individuelles)
+single_path='captures_calibration/' # images individuelles
+stereo_path=single_path # images stéréo (peuvent être les mêmes que individuelles)
 
 # Fichiers de calibration:
 left_xml='cam1.xml'

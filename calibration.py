@@ -1,7 +1,6 @@
 from modules.StereoCalibration import StereoCalibration
 from modules.util import *
 import cv2 as cv
-import matplotlib.pyplot as plt
 
 from config import * #importation des paramètres
 

@@ -30,6 +30,7 @@ yapf = "==0.30.0"
 yarl = "==1.6.3"
 zipp = "==3.4.1"
 Werkzeug = "==1.0.1"
+opencv-python = "*"
 
 [dev-packages]
 

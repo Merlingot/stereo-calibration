@@ -2,14 +2,13 @@ from modules.util import *
 from modules.points3d import *
 import cv2 as cv
 
-from config import calibration_folder, left_xml, right_xml, patternSize
+from config import single_path, left_xml, right_xml, patternSize
 
 ################################################################################
 # Choisir une image spécifique à analyser:
-left='{}left002.jpg'.format(calibration_folder)
-right='{}right002.jpg'.format(calibration_folder)
+left='{}left002.jpg'.format(single_path)
+right='{}right002.jpg'.format(single_path)
 ################################################################################
-
 
 
 _,_, _, _ ,_,E, F = readXML(left_xml) # left

@@ -1,7 +1,7 @@
 import cv2 as cv
 from modules.util import clean_folders
 
-from config import calibration_folder as folder
+from config import single_path as folder
 
 ################################################################################
 # Déclaration des périphériques de capture
