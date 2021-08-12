@@ -2,12 +2,12 @@ from modules.util import *
 from modules.points3d import *
 import cv2 as cv
 
-from config import single_path, left_xml, right_xml, patternSize
+from config import stereo_path, left_xml, right_xml, patternSize
 
 ################################################################################
 # Choisir une image spécifique à analyser:
-left='{}left002.jpg'.format(single_path)
-right='{}right002.jpg'.format(single_path)
+left='{}left002.jpg'.format(stereo_path)
+right='{}right002.jpg'.format(stereo_path)
 ################################################################################
 
 

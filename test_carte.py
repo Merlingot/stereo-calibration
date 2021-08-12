@@ -6,8 +6,8 @@ from config import stereo_path, left_xml, right_xml
 
 ################################################################################
 # Choisir une image à analyser:
-left='{}left002.jpg'.format(stereo_path)
-right='{}right002.jpg'.format(stereo_path)
+left='{}left005.jpg'.format(stereo_path)
+right='{}right005.jpg'.format(stereo_path)
 ################################################################################
 
 
@@ -16,8 +16,7 @@ cam1,cam2=get_cameras(left_xml, right_xml, alpha=0)
 cam1.set_images(left)
 cam2.set_images(right)
 
-cloud, mask, depth_map = calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q, downscale=2, sigma_wls=1.5, fbs_spatial=8.0, bilateral_on=False)
-# np.savetxt('depth_map.txt', depth_map)
+cloud, mask, depth_map = calcul_mesh(cam1.rectified, cam2.rectified, cam1.Q, downscale=2, sigma_wls=2.5, fbs_spatial=8.0, bilateral_on=False)
 # ------------------------------------------------------------------------------
 
 # Montrer la carte de profondeur -----------------------------------------------
